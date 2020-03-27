@@ -10,6 +10,7 @@
     * [The Object Class](#The-Object-Class)
     * [Constructors](#Constructors)
     * [Initialization](#Initialization)
+    * [Classes](#Classes)
     * [Nested Classes](#Nested-Classes)
     * [Anonymous and Local Classes](#Anonymous-and-Local-Classes)
     * [Abstract Classes](#Abstract-Classes)
@@ -227,16 +228,58 @@
            |+------------+  +-----------+  +----------+|                    |+---------------------+  +------------------+  +-----------------+|
            +-------------------------------------------+                    +------------------------------------------------------------------+
 ```
-* > https://www.cnblogs.com/jxzheng/p/5191037.html
-* > https://www.cnblogs.com/kevinwu/archive/2012/05/22/2498638.html
-* > https://www.ibm.com/developerworks/cn/java/j-lo-clobj-init/
-* > https://www.javaworld.com/article/3040564/java-101-class-and-object-initialization-in-java.html
-* > https://blog.csdn.net/w1196726224/article/details/56529615
+* Java类的初始化
+    * Java编译器把所有的类变量初始化语句和静态初始化器通通收集到`<clinit>`方法中，该方法只能被JVM调用，专门承担初始化工作。
+    * 初始化一个类必须保证其直接超类已被初始化。
+    * 并非所有类都拥有`<clinit>()`方法。以下类不会拥有`<clinit>`方法：
+        * 该类既没有声明任何类变量，也没有静态初始化语句。
+        * 该类声明了类变量，但没有使用类变量初始化语句或静态初始化语句初始化。
+        * 该类只包含静态final变量的类变量初始化语句，并且类变量初始化语句是常量表达式。
+    * Java类初始化的时机
+        * 规范定义类的初始化时机为“initialize on first active use”，即“在首次主动使用时初始化”。装载和链接在初始化之前就要完成。
+        * 首次主动使用的情形：
+            * 创建类的新实例--new，反射，克隆或反序列化；
+            * 调用类的静态方法；
+            * 操作类和接口的静态字段；（final字段除外）
+            * 调用Java的特定的反射方法；
+            * 初始化一个类的子类；
+            * 指定一个类作为Java虚拟机启动时的初始化类（含有main方法的启动类）。
+* Java对象初始化
+    * 编译器为每个类生成至少一个实例初始化方法，即`<init>`()方法。此方法与源程序里的每个构造方法对应。如果类没有声明构造方法，则生成一个默认构造方法，该方法仅调用父类的默认构造方法，同时生成与该默认构造方法对应的`<init>`()方法。
+    * `<init>`()方法内容大概为：
+        * 调用另一个`<init>`()方法（本类的另外一个`<init>()`方法或父类的`<init>`()方法）;
+        * 初始化实例变量;
+        * 与其对应的构造方法内的字节码
+    * Java对象初始化的时机
+        * 对象初始化又称为对象实例化。Java对象在其被创建时初始化。有两种方式创建Java对象：
+            * 一种是显示对象创建，通过new关键字来调用一个类的构造函数，通过构造函数创建一个对象。
+            * 一种是隐式对象创建：
+                * 加载一个包含String字面量的类或接口会引起一个新的String对象创建，除非包含相同字面量的String对象已经在JVM中存在了。
+                * 自动装箱机制可能会引起一个原子类型的包装类对象被创建。
+                * String连接符也可能会引起新的String或者StringBuilder对象被创建，同时还有可能引起原子类型的包装对象被创建。
+    * 对象实例初始化流程
+        1. 进入子类构造函数
+        2. 子类成员变量的内存被分配
+        3. 调用父类的构造函数
+        4. 父类成员变量的内存被分配
+        5. 执行父类构造函数的命令
+        7. 父类的成员变量初始化被调用
+        8. 执行子类构造函数的命令
+        9. 子类的成员变量初始化被调用
+Derived类的成员变量初始化被调用
+执行Derived构造函数体
+* Refs:
+    * > https://www.cnblogs.com/jxzheng/p/5191037.html
+    * > https://www.cnblogs.com/kevinwu/archive/2012/05/22/2498638.html
+    * > https://www.ibm.com/developerworks/cn/java/j-lo-clobj-init/
+    * > https://www.javaworld.com/article/3040564/java-101-class-and-object-initialization-in-java.html
+    * > https://blog.csdn.net/w1196726224/article/details/56529615
 
-### Nested Classes
-### Anonymous and Local Classes
-### Abstract Classes
-### Final Class
+### Classes
+#### Nested Classes
+#### Anonymous and Local Classes
+#### Abstract Classes
+#### Final Class
 * final变量能被显式地初始化并且只能初始化一次。
 * 被声明为final的对象的引用不能指向不同的对象。但是final对象里的数据可以被改变。也就是说final对象的引用不能改变，但是里面的值可以改变。
 * final修饰符通常和static修饰符一起使用来创建类常量。
