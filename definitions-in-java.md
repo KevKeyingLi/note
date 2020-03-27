@@ -266,8 +266,6 @@
         7. 父类的成员变量初始化被调用
         8. 执行子类构造函数的命令
         9. 子类的成员变量初始化被调用
-Derived类的成员变量初始化被调用
-执行Derived构造函数体
 * Refs:
     * > https://www.cnblogs.com/jxzheng/p/5191037.html
     * > https://www.cnblogs.com/kevinwu/archive/2012/05/22/2498638.html
