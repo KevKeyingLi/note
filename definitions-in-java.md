@@ -10,18 +10,13 @@
     * [The Object Class](#The-Object-Class)
     * [Constructors](#Constructors)
     * [Initialization](#Initialization)
-    * [Classes](#Classes)
     * [Nested Classes](#Nested-Classes)
-    * [Anonymous and Local Classes](#Anonymous-and-Local-Classes)
     * [Abstract Classes](#Abstract-Classes)
     * [Final Class](#Abstract-Classes)
     * [Super Keyword](#Super-Keyword)
     * [Finalize](#Finalize)
 - [Interfaces](Interfaces)
-    * [More on Interfaces](#More-on-Interfaces)
 - [Inheritance](#Inheritance)
-    * [Multiple Inheritance](#Multiple-Inheritance)
-    * [Inheritance Gotchas](#Inheritance-Gotchas)
 - [Lambda Expressions](#Lambda-Expressions)
 - [Generics](#Generics)
     * [Why Generics](#Why-Generics)
@@ -273,27 +268,107 @@
     * > https://www.javaworld.com/article/3040564/java-101-class-and-object-initialization-in-java.html
     * > https://blog.csdn.net/w1196726224/article/details/56529615
 
-### Classes
-#### Nested Classes
-#### Anonymous and Local Classes
-#### Abstract Classes
-#### Final Class
+### Nested Classes
+* 成员内部类
+    * 定义为位于另一个类的内部
+    * 可以无条件访问外部类的所有成员属性和成员方法(包括private成员和静态成员)
+    * 在外部类中如果要访问成员内部类的成员，必须先创建一个成员内部类的对象，再通过指向这个对象的引用来访问
+    * 如果要创建成员内部类的对象，前提是必须存在一个外部类的对象
+    * 如果成员内部类Inner用private修饰，则只能在外部类的内部访问，如果用public修饰，则任何地方都能访问，如果用protected修饰，则只能在同一个包下或者继承外部类的情况下访问，如果是默认访问权限，则只能在同一个包下访问。这一点和外部类有一点不一样，外部类只能被public和包访问两种权限修饰
+* 局部内部类
+    * 局部内部类是定义在一个方法或者一个作用域里面的类，它和成员内部类的区别在于局部内部类的访问仅限于方法内或者该作用域内
+    * 局部内部类就像是方法里面的一个局部变量一样，是不能有public、protected、private以及static修饰符的
+* 匿名内部类
+    * 匿名内部类是唯一一种没有构造器的类。正因为其没有构造器，所以匿名内部类的使用范围非常有限，大部分匿名内部类用于接口回调。
+    * 匿名内部类在编译的时候由系统自动起名为Outter$1.class。
+    * 一般来说，匿名内部类用于继承其他类或是实现接口，并不需要增加额外的方法，只是对继承方法的实现或是重写。
+* 静态内部类
+    * 静态内部类是不需要依赖于外部类的，这点和类的静态成员属性有点类似，并且它不能使用外部类的非static成员变量或者方法
+* Refs:
+    * > https://www.cnblogs.com/dolphin0520/p/3811445.html
+    * > https://www.jianshu.com/p/e385ce41ca5b
+
+### Abstract Classes
+* 而抽象类是指在普通类的结构里面增加抽象方法的组成部分。拥有抽象方法的类就是抽象类，抽象类要使用abstract关键字声明。
+* 抽象方法是指没有方法体的方法，同时抽象方法还必须使用关键字abstract做修饰。
+* 抽象类的使用原则
+    * 抽象方法必须为public或者protected，缺省情况下默认为public
+    * 抽象类不能直接实例化，需要依靠子类采用向上转型的方式处理
+    * 抽象类必须有子类，使用extends继承，一个子类只能继承一个抽象类
+    * 子类如果不是抽象类，则必须覆写抽象类之中的全部抽象方法
+* 虽然一个类的子类可以去继承任意的一个普通类，可是从开发的实际要求来讲，普通类尽量不要去继承另外一个普通类，而是去继承抽象类。
+* 抽象类的使用限制
+    * 由于抽象类里会存在一些属性，那么抽象类中一定存在构造方法，其存在目的是为了属性的初始化。并且子类对象实例化的时候，依然满足先执行父类构造，再执行子类构造的顺序。
+    * 外部抽象类不允许使用static声明，而内部的抽象类运行使用static声明。
+    * 任何时候，如果要执行类中的static方法的时候，都可以在没有对象的情况下直接调用，对于抽象类也一样。
+* Refs: 
+    * > https://blog.csdn.net/wei_zhi/article/details/52736350
+
+### Final Class
 * final变量能被显式地初始化并且只能初始化一次。
 * 被声明为final的对象的引用不能指向不同的对象。但是final对象里的数据可以被改变。也就是说final对象的引用不能改变，但是里面的值可以改变。
 * final修饰符通常和static修饰符一起使用来创建类常量。
 * 类中的final方法可以被子类继承，但是不能被子类修改。
 * 声明final方法的主要目的是防止该方法的内容被修改。
-* final 类不能被继承，没有类能够继承 final 类的任何特性。
+* final类不能被继承，没有类能够继承 final 类的任何特性。
 
 ### Super Keyword
+* 主要存在于子类方法中，用于指向子类对象中父类对象
+    * 访问父类的属性
+    * 访问父类的函数
+    * 访问父类的构造函数
+* Refs:
+    * > https://blog.csdn.net/qq_33642117/article/details/51919528
+
 ### Finalize
+* 一旦垃圾回收器准备好释放对象占用的存储空间，将首先调用其finalize( )方法，并且在下一次垃圾回收动作发生时，才会真正回收对象占用的内存。所以要是你打算用 finalize( )，就能在“垃圾回收时刻”做一些重要的清除工作。
+* 对象可能不被回收。
+    * 垃圾回收并不等于“析构”。
+        * C++中调用拆构函数，对象一定会被销毁，但是Java中没这个概念，要做类似的清除工作，你必须自己动手创建一个执行清除工作的普通方法。
+            * 例如，假设某个对象在创建过程中，会将自己绘制到屏幕上。要是你不明确地从屏幕上将其擦除，它可能永远得不到清除。如果在finalize()里加入某种擦除功能，当“垃圾回收”发生时（不能保证一定会发生），finalize()得到了调用，图像就会被擦除。
+        * 垃圾回收器一直都没有释放你创建的任何对象的存储空间，如果程序执行结束，那些资源会全部交还给操作系统。
+    * 垃圾回收只与内存有关。
+        * 垃圾回收器存在的唯一原因是为了回收程序不再使用的内存。
+        * 如果对象中含有其他对象，finalize()不会释放那些对象呢。无论对象是如何创建的，垃圾回收器都会负责释放对象占据的所有内存。
+        * 如果Java虚拟机（JVM）并未面临内存耗尽的情形，它是不会浪费时间在回收垃圾以恢复内存上的。
+* Refs:
+    * > https://blog.csdn.net/wuha0/article/details/7233890
 
 ## Interfaces
-### More on Interfaces
+* 接口中的所有属性默认的修饰符是public static final
+* 接口中的所有方法默认的修饰符是public abstract
+* 接口的特点
+    * 类实现接口可以通过implements实现，实现接口的时候必须把接口中的所有方法实现,一个类可以实现多个接口。
+    * 接口中定义的方法不能有方法体。由于接口中的方法默认都是抽象的，所以不能被实例化。
+    * 如果实现类中要访问接口中的成员，不能使用super关键字。因为两者之间没有显示的继承关系，况且接口中的成员成员属性是静态的。可以使用接口名直接访问。
+    * 接口没有构造方法。
+* A functional interface is an interface that contains only one abstract method. 
+* 现在的interface可以提供默认实现体，以方便对老接口的更新。
+* Refs:
+    * > https://blog.csdn.net/qq_33642117/article/details/51926634
 
 ## Inheritance
-### Multiple Inheritance
-### Inheritance Gotchas
+* 继承是从已有的类中派生出新的类，新的类能吸收已有类的数据属性和行为，并能扩展新的能力。
+* 子类即使不扩充父类，也能维持父类的操作。
+* 继承的限制
+    * 一个子类只能够继承一个父类，存在单继承局限。
+    * 在一个子类继承的时候，实际上会继承父类之中的所有操作（属性、方法），但是需要注意的是，对于所有的非私有操作属于显式继承，而所有的私有操作属于隐式继承（间接完成），通过setter、getter方法间接的进行操作。
+    * 实例化子类对象，会默认先执行父类构造，调用父类构造的方法体执行，而后再实例化子类对象，调用子类的构造方法。而这个时候，对于子类的构造而言，就相当于隐含了一个super()。
+    * 默认调用的是无参构造，而如果这个时候父类没有无参构造，则子类必须通过super()调用指定参数的构造方法。
+    * super调用父类构造时，一定要放在构造方法的首行上。
+* abstract class vs. interface
+    * Use an abstract class when subclasses share state or use common functionality. Or you require to declare non-static, non-final fields or need access modifiers other than public.
+    * Use an interface if you expect unrelated classes would implement your interface.
+* polymorphism
+    * Polymorphism is when you can treat an object as a generic version of something, but when you access it, the code determines which exact type it is and calls the associated code. 
+* Any method inherited from a class or a superclass is invoked over any default method inherited from an interface.(先类后接口)
+* If a subclass defines a static method with the same signature as a static method in the superclass, then the method in the subclass hides the one in the superclass.
+* Instance methods are preferred over interface default methods.
+* Static methods in interfaces are never inherited.
+* Methods that are already overridden by other candidates are ignored. This circumstance can arise when supertypes share a common ancestor.
+* If two or more independently defined default methods conflict, or a default method conflicts with an abstract method, then the Java compiler produces a compiler error. You must explicitly override the supertype methods.
+* The access specifier for an overriding method can allow more, but not less, access than the overridden method.
+* You will get a compile-time error if you attempt to change an instance method in the superclass to a static method in the subclass, and vice versa.
 
 ## Lambda Expressions
 
