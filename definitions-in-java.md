@@ -19,7 +19,6 @@
 - [Inheritance](#Inheritance)
 - [Lambda Expressions](#Lambda-Expressions)
 - [Generics](#Generics)
-    * [Why Generics](#Why-Generics)
     * [Raw Types](#Raw-Types)
     * [Generic Types](#Generic-Types)
     * [Bounded Types](#Bounded-Types)
@@ -371,12 +370,193 @@
 * You will get a compile-time error if you attempt to change an instance method in the superclass to a static method in the subclass, and vice versa.
 
 ## Lambda Expressions
+* Lambda 表达式的加入，使得 Java 拥有了函数式编程的能力。
+* 在其它语言中，Lambda 表达式的类型是一个函数；但在 Java 中，Lambda 表达式被表示为对象，因此它们必须绑定到被称为功能接口的特定。
+* Lambda 表达式是一个匿名函数，这是一种没有声明的方法，即没有访问修饰符，返回值声明和名称。
+* Java中的Lambda表达式通常使用语法是 (argument) -> (body)
+* Lambda 表达式的结构：
+    * Lambda 表达式可以具有零个，一个或多个参数。
+    * 可以显式声明参数的类型，也可以由编译器自动从上下文推断参数的类型。例如 (int a) 与刚才相同 (a)。
+    * 参数用小括号括起来，用逗号分隔。例如 (a, b) 或 (int a, int b) 或 (String a, int b, float c)。
+    * 空括号用于表示一组空的参数。例如 () -> 42。
+    * 当有且仅有一个参数时，如果不显式指明类型，则不必使用小括号。例如 a -> return a*a。
+    * Lambda 表达式的正文可以包含零条，一条或多条语句。
+    * 如果 Lambda 表达式的正文只有一条语句，则大括号可不用写，且表达式的返回值类型要与匿名函数的返回类型相同。
+    * 如果 Lambda 表达式的正文有一条以上的语句必须包含在大括号（代码块）中，且表达式的返回值类型要与匿名函数的返回类型相同。
+* 双冒号(::)操作符是Java中的方法引用。
+    * 当们使用一个方法的引用时，目标引用放在::之前，目标引用提供的方法名称放在::之后，即“目标引用::方法”。
+* 功能接口(Functional interface)
+    * 功能接口指只有一个抽象方法的接口。
+    * 我们使用匿名内部类实例化功能接口的对象，而使用Lambda表达式，可以简化写法。
+* Refs:
+    * > https://segmentfault.com/a/1190000009186509
+    * > https://www.jianshu.com/p/a01d84c57180
+    * > https://blog.csdn.net/jinzhencs/article/details/50748202
 
 ## Generics
-### Why Generics
+* 泛型，即“参数化类型”。
+    * 参数化类型就是将类型由原来的具体的类型参数化，类似于方法中的变量参数，此时类型也定义成参数形式(类型形参)，然后在使用/调用时传入具体的类型(类型实参)。
+    * 泛型的本质是在不创建新的类型的情况下，通过泛型指定的不同类型来控制形参具体限制的类型。也就是说在泛型使用过程中，操作的数据类型被指定为一个参数，这种参数类型可以用在类、接口和方法中，分别被称为泛型类、泛型接口、泛型方法。
+* 泛型只在编译阶段有效，在编译之后程序会采取去泛型化的措施，以下两个泛型容器在编译后被视为类型相同。
+    ```java
+    List<String> stringArrayList = new ArrayList<String>();
+    List<Integer> integerArrayList = new ArrayList<Integer>();
+    ```
+    * 在编译过程中，正确检验泛型结果后，会将泛型的相关信息擦出，并且在对象进入和离开方法的边界处添加类型检查和类型转换的方法。也就是说，泛型信息不会进入到运行时阶段。
+* 泛型的使用
+    * 泛型类
+        * 通过泛型可以完成对一组类的操作对外开放相同的接口，如：List、Set、Map。
+        * 泛型类的最基本写法
+            ```java
+            public class Generic<T> { 
+                private T key;
+                public Generic(T key) { this.key = key; }
+                public T getKey() { return key; }
+            }
+            Generic<Integer> genericInteger = new Generic<Integer>(123456);
+            Generic<String> genericString = new Generic<String>("key_vlaue");
+            ```
+        * 定义的泛型类不一定要传入泛型类型实参。如果传入泛型实参，则会根据传入的泛型实参做相应的限制，此时泛型才会起到本应起到的限制作用。如果不传入泛型类型实参的话，在泛型类中使用泛型的方法或成员变量定义的类型可以为任何的类型。
+            ```java
+            Generic generic = new Generic("111111");
+            Generic generic1 = new Generic(4444);
+            Generic generic2 = new Generic(55.55);
+            Generic generic3 = new Generic(false);
+            ```
+        * 泛型的类型参数只能是类类型，不能是简单类型，不能对确切的泛型类型使用instanceof操作。
+    * 泛型接口
+        * 泛型接口与泛型类的定义及使用基本相同。
+            ```java
+            public interface Generator<T> {
+                public T next();
+            }
+            ```
+        * 当实现泛型接口的类，未传入泛型实参时
+            * 未传入泛型实参时，与泛型类的定义相同，在声明类的时候，需将泛型的声明也一起加到类中，否则报错。
+            ```java
+            class FruitGenerator<T> implements Generator<T>{
+                @Override
+                public T next() {
+                    return null;
+                }
+            }
+            ```
+        * 当实现泛型接口的类，传入泛型实参时
+            * 所有使用泛型的地方都要替换成传入的实参类型
+            ```java
+            public class FruitGenerator implements Generator<String> {
+                private String[] fruits = new String[]{"Apple", "Banana", "Pear"};
+                @Override
+                public String next() {
+                    Random rand = new Random();
+                    return fruits[rand.nextInt(3)];
+                }
+            }
+            ```
+    * 泛型方法
+        * 泛型方法是在调用方法的时候指明泛型的具体类型。
+            ```java
+            public <T> T genericMethod(Class<T> tClass)throws InstantiationException,IllegalAccessException{
+                T instance = tClass.newInstance();
+                return instance;
+            }
+            ```
+            * public与返回值中间`<T>`可以理解为声明此方法为泛型方法。
+            * 只有声明了<T>的方法才是泛型方法，泛型类中的使用了泛型的成员方法并不是泛型方法。
+        * 泛型方法的基本用法
+            ```java
+            public class GenericTest {
+                public class Generic<T>{     
+                    private T key;
+                    public Generic(T key) {this.key = key;}
+                    //虽然在方法中使用了泛型，但是这并不是一个泛型方法。
+                    //这只是类中一个普通的成员方法，只不过他的返回值是在声明泛型类已经声明过的泛型。
+                    public T getKey(){
+                        return key;
+                    }
+                    /**
+                    * 这个方法显然是有问题的，在编译器会给我们提示这样的错误信息"cannot reslove symbol E"
+                    * 因为在类的声明中并未声明泛型E，所以在使用E做形参和返回值类型时，编译器会无法识别。
+                    public E setKey(E key) {this.key = keu}
+                    */
+                }
+
+                /** 
+                * 这才是一个真正的泛型方法。
+                * 首先在public与返回值之间的<T>必不可少，这表明这是一个泛型方法，并且声明了一个泛型T
+                * 这个T可以出现在这个泛型方法的任意位置.
+                * 泛型的数量也可以为任意多个 
+                *    如：public <T,K> K showKeyName(Generic<T> container){...}
+                */
+                public <T> T showKeyName(Generic<T> container){
+                    System.out.println("container key :" + container.getKey());
+                    //当然这个例子举的不太合适，只是为了说明泛型方法的特性。
+                    T test = container.getKey();
+                    return test;
+                }
+
+                //这也不是一个泛型方法，这就是一个普通的方法，只是使用了Generic<Number>这个泛型类做形参而已。
+                public void showKeyValue1(Generic<Number> obj) { Log.d("泛型测试","key value is " + obj.getKey()); }
+
+                //这也不是一个泛型方法，这也是一个普通的方法，只不过使用了泛型通配符?
+                //同时这也印证了泛型通配符章节所描述的，?是一种类型实参，可以看做为Number等所有类的父类
+                public void showKeyValue2(Generic<?> obj) { Log.d("泛型测试","key value is " + obj.getKey()); }
+
+                /**
+                * 这个方法是有问题的，编译器会为我们提示错误信息："UnKnown class 'E' "
+                * 虽然我们声明了<T>,也表明了这是一个可以处理泛型的类型的泛型方法。
+                * 但是只声明了泛型类型T，并未声明泛型类型E，因此编译器并不知道该如何处理E这个类型。
+                public <T> T showKeyName(Generic<E> container){...}  
+                */
+                /**
+                * 这个方法也是有问题的，编译器会为我们提示错误信息："UnKnown class 'T' "
+                * 对于编译器来说T这个类型并未项目中声明过，因此编译也不知道该如何编译这个类。
+                * 所以这也不是一个正确的泛型方法声明。
+                public void showkey(T genericObj){}
+                */
+                public static void main(String[] args) {}
+            }
+            ```
+* Refs: 
+    * > https://blog.csdn.net/s10461/article/details/53941091
+    * > https://www.cnblogs.com/iyangyuan/archive/2013/04/09/3011274.html
+    * > https://blog.csdn.net/caihuangshi/article/details/51278793
+    * > https://blog.csdn.net/qq_27093465/article/details/73229016
+
 ### Raw Types
+* 缺少实际类型变量的泛型就是一个原始类型
+* 实际行为：获取和返回的类型都为Object
+* 缺点：无法进行编译时类型检查，将异常的捕获推迟到了运行时，还可能会收到unchecked警告。
+    ```java
+    public class Box<T> {
+        public void set(T t) {}
+    }
+    Box rawBox = new Box(); // Box就是泛型Box<T>的原始类型。
+    ```
+* 把一个原始类型赋值给一个参数化类型时会得到一个警告
+* 使用一个原始类型调用一个泛型方法，而这个泛型方法定义在对应的泛型中时，也会收到一个警告。这个警告表明原始类型绕过了泛型检查，将对不安全代码的异常捕获推迟到了运行时。因此，你应该避免使用原始类型。
+* Refs
+    * > https://blog.csdn.net/FIRE_TRAY/article/details/50583332
+
 ### Generic Types
 ### Bounded Types
+* 在使用泛型的时候，我们还可以为传入的泛型类型实参进行上下边界的限制。
+    * 为泛型添加上边界，即传入的类型实参必须是指定类型的子类型
+        ```java
+        public class Generic<T extends Number>{
+            private T key;
+            public Generic(T key) { this.key = key; }
+            public T getKey(){ return key; }
+        }
+        //在泛型方法中添加上下边界限制的时候，必须在权限声明与返回值之间的<T>上添加上下边界，即在泛型声明的时候添加
+        //public <T> T showKeyName(Generic<T extends Number> container)，编译器会报错："Unexpected bound"
+        public <T extends Number> T showKeyName(Generic<T> container){
+            System.out.println("container key :" + container.getKey());
+            T test = container.getKey();
+            return test;
+        }
+        ```
+
 ### Type Inference
 ### Erasure
 ### Bridge Methods
