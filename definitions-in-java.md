@@ -394,6 +394,7 @@
     * > https://blog.csdn.net/jinzhencs/article/details/50748202
 
 ## Generics
+### Generic Types
 * 泛型，即“参数化类型”。
     * 参数化类型就是将类型由原来的具体的类型参数化，类似于方法中的变量参数，此时类型也定义成参数形式(类型形参)，然后在使用/调用时传入具体的类型(类型实参)。
     * 泛型的本质是在不创建新的类型的情况下，通过泛型指定的不同类型来控制形参具体限制的类型。也就是说在泛型使用过程中，操作的数据类型被指定为一个参数，这种参数类型可以用在类、接口和方法中，分别被称为泛型类、泛型接口、泛型方法。
@@ -538,7 +539,6 @@
 * Refs
     * > https://blog.csdn.net/FIRE_TRAY/article/details/50583332
 
-### Generic Types
 ### Bounded Types
 * 在使用泛型的时候，我们还可以为传入的泛型类型实参进行上下边界的限制。
     * 为泛型添加上边界，即传入的类型实参必须是指定类型的子类型
@@ -558,6 +558,38 @@
         ```
 
 ### Type Inference
+* 调用泛型类的构造器时可以用空尖括号只要上下文可推断，称作diamond。想让type inference推断时必须要有尖括号，不写尖括号会导致unchecked。
+    ```java
+    Map<String, List<String>> myMap = new HashMap<>();
+    ```
+* 调用普通泛型方法时
+    ```java
+    List<String> list = new ArrayList<>();
+    list.add("A");// 由于addAll期望获得Collection<? extends String>类型的参数，因此下面的语句无法通过
+    list.addAll(new ArrayList<>());
+    ```
+* 调用有返回值的泛型方法并赋值时，根据target types推断参数类型
+    ```java
+    static <T> List<T> emptyList();
+    List<String> listOne = Collections.emptyList();
+    ```
+* java 8：根据target types推断参数类型扩展至可以根据target argument来推断
+    ```java
+    void processStringList(List<String> stringList) { }
+    processStringList(Collections.emptyList());
+    ```
+    * 这里Collections.emptyList()返回的时List，而processStringList方法expect的参数时List，于是编译器推测T是String
+* 泛型/非泛型类都可以有泛型的构造器
+    * 泛型方法中的泛型构造器
+    ```java
+    class MyClass<X> {
+        <T> MyClass(T t) {}
+    }
+    ```
+* Refs
+    * > https://www.cnblogs.com/heimianshusheng/p/5766573.html
+    * > https://blog.csdn.net/u010925967/article/details/79459236
+
 ### Erasure
 ### Bridge Methods
 ### Wildcard
