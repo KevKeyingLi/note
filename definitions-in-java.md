@@ -759,6 +759,90 @@
     * > https://www.jianshu.com/p/f8d71e1e8821
 
 ### Reference Strengths
+* 有4种reference类型，它们从强到弱，依次如下：
+    * Strong reference: 大家平常写代码的引用都是这种类型的引用，它可以防止引用的对象被垃圾回收。
+        * JVM标记一个对象是否为垃圾是根据可达性算法。 我们平常写的代码其实都是Strong reference，被Strong reference所引用的对象它会保持这个对象到GC roots的可达性，以防被JVM标记为垃圾对象，从而被回收。
+        * 比如下面的代码就是一个Strong reference
+            ```java
+            String str = new String("hello world");
+            ```
+    * Soft reference: 它引用的对象只有在内存不足时，才会被回收。
+        * 下面的这段代码可能出现什么样的问题?
+            ```java
+            public class LeakyChecksum {
+                private byte[] byteArray;
+                public synchronized int getFileChecksum(String fileName) {
+                    int len = getFileSize(fileName);
+                    if (byteArray == null || byteArray.length < len) byteArray = new byte[len];
+                    readFileContents(fileName, byteArray);
+                    // calculate checksum and return it
+                }
+            }
+            ```
+            * 如果把byteArray字节数组放到getFileChecksum方法中完全没有问题，但是，上面的程序把byteArray字节数组从局部变量提升到实例变量会出现很多问题。共享byteArray变量，从而你不得不去考虑线程安全问题，而上面的程序在getFileChecksum方法上加上了synchronized 关键字，这大大降低了程序的可扩展性。
+            * 上述代码的主要功能就是根据文件的内容去计算它的checksum，如果上述代码的if 条件不成立，它会不断地重用字节数组，而不是重新分配它。除非LeakyChecksum对象被gc，否则这个字节数组始终不会被gc，由于程序到它一直是可达的。而且更糟糕的是，随着程序的不断运行，这个字节数组只会不断增大，不会减小，它的大小始终都和它处理过的最大的文件的大小一致，这样很可能会导致JVM更频繁地GC，降低应用程序地性能。大多数情况下，这个字节数组所占的空间要比它实际要用的空间要大，而多余的空间又不能被回收利用，这导致了内存泄露。
+        * 对于只被Soft references所引用的对象，我们称它为softly reachable objects。只要可得到的内存很充足，softly reachable objects 通常不会被gc。
+        * 用SoftReference 改写上面的代码
+            ```java
+            public class CachingChecksum {
+                private SoftReference<byte[]> bufferRef;
+                public synchronized int getFileChecksum(String fileName) {
+                    int len = getFileSize(fileName);
+                    byte[] byteArray = bufferRef.get();
+                    if (byteArray == null || byteArray.length < len) {
+                        byteArray = new byte[len];
+                        bufferRef.set(byteArray);
+                    }
+                    readFileContents(fileName, byteArray);
+                    // calculate checksum and return it
+                }
+            }
+            ```
+            * 一旦走出if 语句，字节数组对象就只被Soft references 所引用，成为了softly reachable objects。对于垃圾收集器来说，它只会在真正需要内存的时候才会去回收softly reachable objects。 现在，如果我们的内存不算吃紧，这个字节数组buffer会一直保存在内存中。
+        * 在抛出OutOfMemoryError 之前，垃圾收集器一定会clear掉所有的soft references.
+    * Weak reference: 它并不会延长对象的生命周期，即它不能阻止垃圾收集器回收它所引用的对象。
+        * 代码如下：
+            ```java
+            public class SocketManager {
+                private Map<Socket,User> m = new HashMap<Socket,User>();
+                public void setUser(Socket s, User u) { m.put(s, u); }
+                public User getUser(Socket s) { return m.get(s); }
+                public void removeUser(Socket s) { m.remove(s); }
+            }
+            ```
+            * 通常情况下，Socket对象的生命周期要比整个应用的生命周期要短，同时，它也会比用到它的方法调用要长。上述代码把User 对象的生命周期与Socket对象绑在一起，因为我们不能准确地知道Socket连接在什么时候被关闭，所以我们不能手动地去把它从Map中移除。Socket和User对象一直都不会被gc，它们会一直被保留在内存中。如果这样一直下去，就会导致程序出现内存泄露的错误。
+            * 如果有一种手段可以做到，比如：当Map中Entry的Key不再被使用了，就会把这个Entry自动移除，这样我们就可以解决上面的问题了。`WeakHashMap`可以做到这点,它的Entry继承了WeakReference类。
+                ```java
+                private static class Entry<K,V> extends WeakReference<Object> implements Map.Entry<K,V> {
+                    V value;
+                    final int hash;
+                    Entry<K,V> next;
+                    Entry(Object key, V value, ReferenceQueue<Object> queue, int hash, Entry<K,V> next) {
+                        super(key, queue);
+                        this.value = value;
+                        this.hash  = hash;
+                        this.next  = next;
+                    }
+                    public V get(Object key) {
+                        Object k = maskNull(key); // 如果给定的key是null，则用NULL_KEY
+                        int h = hash(k); // 根据key算出它的hash值
+                        Entry<K,V>[] tab = getTable();
+                        int index = indexFor(h, tab.length); // 找到当前hash值所对应的bucket下标
+                        Entry<K,V> e = tab[index];
+                        while (e != null) { // 如果有hash冲突的情况下，会沿着链表找下去
+                            if (e.hash == h && eq(k, e.get())) return e.value;
+                            e = e.next;
+                        }
+                        return null;
+                    }
+                }
+                ```
+        * 一个只被Weak references所引用的对象，它被称作weakly reachable object。而这样的对象不能阻止垃圾收集器对它的回收。
+        * 就像上面的源码一样，我们会在构造的时候，用Weak references去引用对象，如果被引用的对象没有被gc，那么可以通过WeakReference的`get()`方法去获取被引用的对象。如果被引用的对象已经被垃圾回收或者有人调用了`WeakReference.clear()`，那么`get()`方法将始终返回null. 如果你想用`get()`方法返回的结果，一个最佳的实践就是你应该做一下非空检查。总之，Weak reference并不会延长对象的生命周期。
+    * Phantom reference : 它与上面的3种类型有很大的不同，它的`get()`方法始终返回null，即通过这个引用，你甚至都不能获取它所引用的对象，如果你看它的源码，它的构造器必须要给定一个ReferenceQueue，当然了，你也可以把它设置为空，但是这样的引用一点意义都没有。
+* Refs:
+    * > https://blog.csdn.net/xlinsist/article/details/57089288
+
 ### Garbage Collection
 ### Memory Tuning
 
