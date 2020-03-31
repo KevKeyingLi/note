@@ -903,13 +903,117 @@
         * 减少Full GC的执行时间。Full GC执行时间比Minor GC要长很多。
 * Refs:
     * > https://www.cnblogs.com/shudonghe/p/3457990.html
+    * > https://blog.csdn.net/weixin_40144050/article/details/79139948
     * > https://blog.csdn.net/zhangphil/article/details/78260863
+    * > https://segmentfault.com/a/1190000008384410
 
 ### Memory Tuning
 
 ## Collections
 ### Collection Types
+* Collections Framework
+    ```
+    <Iterable><---<Collection><-+-<List><-+-[ArrayList]
+                                |         +-[LinkedList]
+                                |         +-[Vector]<---[Stack]
+                                |
+                                +-<Queue><-+-[PriorityQueue]
+                                |          +-<Deque><---[ArrayDeque]
+                                |
+                                +-<Set><-+-[HashSet]<---[LinkedHashSet]
+                                         +-[EnumSet]
+                                         +-<SortedSet><---[TreeSet]
+                                        
+    <Map><-+-<AbstractMap><-+-[HashMap]<---[LinkedHashMap]
+                            +-[HashTable]<---[Properties]
+                            +-<SortedMap><---[TreeMap]
+                            +-[IdentityHashMap]
+                            +-[WeakHashMap]
+                            +-[EnumMap]
+    ```
+* 数组与集合的区别
+    * 数组长度不可变化而且无法保存具有映射关系的数据；集合类用于保存数量不确定的数据，以及保存具有映射关系的数据。
+    * 数组元素既可以是基本类型的值，也可以是对象；集合只能保存对象。
+* Set
+    * Set集合不允许存储相同的元素，所以如果把两个相同元素添加到同一个Set集合，则添加操作失败，新元素不会被加入，add()方法返回false。
+    * HashSet
+        * HashSet是按照hash算法来存储元素的，因此具有很好的存取和查找性能。
+        * 特点：
+            * 不能保证元素的顺序。
+            * HashSet不是线程同步的，如果多线程操作HashSet集合，则应通过代码来保证其同步。
+            * 集合元素值可以是null。
+        * 存储原理：
+            * HashSet在底层用数组实现。当向HashSet集合存储一个元素时，HashSet会调用该对象的hashCode()方法得到其hashCode值，然后根据hashCode值决定该对象的存储位置。
+            * HashSet集合判断两个元素相等的标准是(1)两个对象通过equals()方法比较返回true；(2)两个对象的hashCode()方法返回值相等。因此，如果(1)和(2)有一个不满足条件，则认为这两个对象不相等，可以添加成功。如果两个对象的hashCode()方法返回值相等，但是两个对象通过equals()方法比较返回false，HashSet会以链式结构将两个对象保存在同一位置，这将导致性能下降，因此在编码时应避免出现这种情况。
+    * LinkedHashSet
+        * LinkedHashSet是HashSet的一个子类，具有HashSet的特性，也是根据元素的hashCode值来决定元素的存储位置。但它使用链表维护元素的次序，元素的顺序与添加顺序一致。由于LinkedHashSet需要维护元素的插入顺序，因此性能略低于HashSet，但在迭代访问Set里的全部元素时由很好的性能。
+    * TreeSet
+        * TreeSet可以保证元素处于排序状态，它采用红黑树的数据结构来存储集合元素。TreeSet支持两种排序方法：自然排序和定制排序，默认采用自然排序。
+        * 自然排序
+            * TreeSet会调用集合元素的compareTo(Object obj)方法来比较元素的大小关系，然后将元素按照升序排列，这就是自然排序。如果试图将一个对象添加到TreeSet集合中，则该对象必须实现Comparable接口，否则会抛出异常。当一个对象调用方法与另一个对象比较时，例如obj1.compareTo(obj2)，如果该方法返回0，则两个对象相等；如果返回一个正数，则obj1大于obj2；如果返回一个负数，则obj1小于obj2。
+        * 定制排序
+            * 想要实现定制排序，需要在创建TreeSet集合对象时，提供一个Comparator对象与该TreeSet集合关联，由Comparator对象负责集合元素的排序逻辑。
+        * 自然排序实现的是Comparable接口，定制排序实现的是Comparator接口。
+    * EnumSet类
+        * EnumSet是一个专为枚举类设计的集合类，不允许添加null值。EnumSet的集合元素也是有序的，它以枚举值在Enum类内的定义顺序来决定集合元素的顺序。
+* List
+    * List集合代表一个有序、可重复集合，集合中每个元素都有其对应的顺序索引。List集合默认按照元素的添加顺序设置元素的索引，可以通过索引(类似数组的下标)来访问指定位置的集合元素。
+    * ArrayList
+        * ArrayList是一个动态数组，每一个ArrayList都有一个初始容量(10)，该容量代表了数组的大小。
+        * 随着容器中的元素不断增加，容器的大小也会随着增加，在每次向容器中增加元素的同时都会进行容量检查，当快溢出时，就会进行扩容操作。
+        * 所以如果我们明确所插入元素的多少，最好指定一个初始容量值，避免过多的进行扩容操作而浪费时间、效率。
+        * 它允许任何符合规则的元素插入甚至包括null。
+        * ArrayList擅长于随机访问元，同时ArrayList是非同步的。
+    * LinkedList
+        * 除了可以根据索引访问集合元素外，LinkedList还实现了Deque接口，可以当作双端队列来使用，也就是说，既可以当作“栈”使用，又可以当作队列使用。
+        * LinkedList内部以链表的形式保存集合中的元素，每个节点有一个指针指向下个节点，所以随机访问集合中的元素性能较差，但在插入删除元素时有较好的性能。
+    * Vector
+        * 与ArrayList相似，但是Vector是同步的。所以说Vector是线程安全的动态数组。
+    * Stack
+        * Stack继承自Vector，实现一个后进先出的堆栈。
+*  Map
+    * Map接口采用键值对`Map<K,V>`的存储方式，保存具有映射关系的数据，因此，Map集合里保存两组值，一组值用于保存Map里的key，另外一组值用于保存Map里的value，key和value可以是任意引用类型的数据。key值不允许重复，可以为null。如果添加key-value对时Map中已经有重复的key，则新添加的value会覆盖该key原来对应的value。
+    * HashMap和HashTable
+        * HashTable是一个古老的Map实现类，它提供的方法比较繁琐，目前基本不用了，HashMap与Hashtable主要存在以下两个典型区别：
+            * HashMap是线程不安全，HashTable是线程安全的。
+            * HashMap可以使用null值最为key或value；Hashtable不允许使用null值作为key和value，如果把null放进HashTable中，将会发生空指针异常。
+        * HashMap工作原理
+            * HashMap基于hashing原理，通过put()和get()方法存储和获取对象。当我们将键值对传递给put()方法时，它调用建对象的hashCode()方法来计算hashCode值，然后找到bucket位置来储存值对象。当获取对象时，通过建对象的equals()方法找到正确的键值对，然后返回对象。HashMap使用链表来解决碰撞问题，当发生碰撞了，对象将会存储在链表的下一个节点中。
+    * LinkedHashMap实现类
+        * LinkedHashMap使用双向链表来维护key-value对的次序(其实只需要考虑key的次序即可)，该链表负责维护Map的迭代顺序，与插入顺序一致，因此性能比HashMap低，但在迭代访问Map里的全部元素时有较好的性能。
+    * Properties
+        * Properties类时Hashtable类的子类，它相当于一个key、value都是String类型的Map，主要用于读取配置文件。
+    * TreeMap
+        * TreeMap是SortedMap的实现类，是一个红黑树的数据结构，每个key-value对作为红黑树的一个节点。TreeMap存储key-value对时，需要根据key对节点进行排序。
+* Refs:
+    * > https://juejin.im/post/5da41417f265da5ba532b21c
+    * > https://blog.csdn.net/softwave/article/details/4166598
+
 ### Iterating in Java
+* 有三种基本遍历方法
+    * for循环
+    * 迭代器遍历
+    * for each循环
+* Iterator与Iterable
+    * iterator为Java中的迭代器对象，是能够对List这样的集合进行迭代遍历的底层依赖。而iterable接口里定义了返回iterator的方法，相当于对iterator的封装，同时实现了iterable接口的类可以支持for each循环。
+    * Iterator接口的源码
+        ```java
+        public interface Iterator<E> {
+            boolean hasNext();
+            E next();
+        }
+        ```
+    * 集合类不继承iterator接口，是通过继承iterable接口获取iterator。
+        ```java
+        public interface Iterable<T> { Iterator<T> iterator(); }
+        ```
+    * 同时实现了Iterable接口的还可以使用for each循环。
+        * 其实for each循环内部也是依赖于Iterator迭代器，只不过Java提供的语法糖，Java编译器会将其转化为Iterator迭代器方式遍历。
+    * Iterable与Iterator关系
+        * 不把hasNext()，next()方法放在Iterable接口中，是有些集合类可能不止一种遍历方式，实现了Iterable的类可以再实现多个Iterator内部类。通过返回不同的Iterator实现不同的遍历方式，这样更加灵活。如果把两个接口合并，就没法返回不同的Iterator实现类了。
+            * 例如LinkedList中的ListItr和DescendingIterator两个内部类，就分别实现了双向遍历和逆序遍历。
+* Refs:
+    * > https://zhuanlan.zhihu.com/p/52366312
 
 ## Exceptions
 ### Checked vs Unchecked
