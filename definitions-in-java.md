@@ -37,16 +37,12 @@
     * [Iterating in Java](#Iterating-in-Java)
 - [Exceptions](#Exceptions)
     * [Checked vs Unchecked](#Checked-vs-Unchecked)
-    * [Catch Block](#Catch-Block)
 - [Reflection](#Reflection)
     * [java.lang.Class](#java.lang.Class)
-    * [Class Modifiers](#Class-Modifiers)
-    * [Instantiation using Reflection](#Instantiation-using-Reflection)
     * [Classloaders](#Classloaders)
 - [Serialization](#Serialization)
 - [Miscellaneous Topics](#Miscellaneous-Topics)
     * [Types](#Types)
-    * [Keywords](#Keywords)
     * [Annotations](#Annotations)
     * [Boxing](#Boxing)
     * [Unboxing](#Unboxing)
@@ -1016,23 +1012,253 @@
     * > https://zhuanlan.zhihu.com/p/52366312
 
 ## Exceptions
+```
+[Throwable]<-+-[Error]<-+-[VirtulMachineError]
+             |          +-[AWTError]
+             |
+             +-[Exception]<-+-[IOException]
+                            +-[RuntimeException]
+```
+* 错误：Error类以及他的子类的实例，代表了JVM本身的错误。错误不能被程序员通过代码处理，Error很少出现。因此，程序员应该关注Exception为父类的分支下的各种异常类。
+* 异常：Exception以及他的子类，代表程序运行时发送的各种不期望发生的事件。可以被Java异常处理机制使用，是异常处理的核心。
+* 异常是在执行某个函数时引发的，而函数又是层级调用，形成调用栈的，因为，只要一个函数发生了异常，那么他的所有的caller都会被异常影响。
+    * 当这些被影响的函数以异常信息输出时，就形成的了异常追踪栈。
+    * 异常最先发生的地方，叫做异常抛出点。
+* 异常处理的基本语法
+    ```java
+    try{
+        //try块中放可能发生异常的代码。
+        //如果执行完try且不发生异常，则接着去执行finally块和finally后面的代码(如果有的话)。
+        //如果发生异常，则尝试去匹配catch块。
+    }catch(SQLException SQLexception){
+        //每一个catch块用于捕获并处理一个特定的异常，或者这异常类型的子类。Java7中可以将多个异常声明在一个catch中。
+        //catch后面的括号定义了异常类型和异常参数。如果异常与之匹配且是最先匹配到的，则虚拟机将使用这个catch块来处理异常。
+        //在catch块中可以使用这个块的异常参数来获取异常的相关信息。异常参数是这个catch块中的局部变量，其它块不能访问。
+        //如果当前try块中发生的异常在后续的所有catch中都没捕获到，则先去执行finally，然后到这个函数的外部caller中去匹配异常处理器。
+        //如果try中没有发生异常，则所有的catch块将被忽略。
+    }catch(Exception exception){
+        //...
+    }finally{
+        //finally块通常是可选的。
+        //无论异常是否发生，异常是否匹配被处理，finally都会执行。
+        //一个try至少要有一个catch块，否则， 至少要有1个finally块。但是finally不是用来处理异常的，finally不会捕获异常。
+        //finally主要做一些清理工作，如流的关闭，数据库连接的关闭等。 
+    }
+    ```
+    * try块中的局部变量和catch块中的局部变量(包括异常变量)，以及finally中的局部变量，他们之间不可共享使用。
+    * 每一个catch块用于处理一个异常。异常匹配是按照catch块的顺序从上往下寻找的，只有第一个匹配的catch会得到执行。匹配时，不仅运行精确匹配，也支持父类匹配，因此，如果同一个try块下的多个catch异常类型有父子关系，应该将子类异常放在前面，父类异常放在后面，这样保证每个catch块都有存在的意义。
+    * java中，异常处理的任务就是将执行控制流从异常发生的地方转移到能够处理这种异常的地方去。也就是说：当一个函数的某条语句发生异常时，这条语句的后面的语句不会再执行，它失去了焦点。执行流跳转到最近的匹配的异常处理catch代码块去执行，异常被处理完后，执行流会接着在“处理了这个异常的catch代码块”后面接着执行。
+* throws函数声明
+    * throws声明：如果一个方法内部的代码会抛出检查异常(checked exception)，而方法自己又没有完全处理掉，则javac保证你必须在方法的签名上使用throws关键字声明这些可能抛出的异常，否则编译不通过。
+    * throws是另一种处理异常的方式，它不同于try…catch…finally，throws仅仅是将函数中可能出现的异常向调用者声明，而自己则不具体处理。
+* 自定义异常
+    * 如果要自定义异常类，则扩展Exception类即可，因此这样的自定义异常都属于检查异常(checked exception)。如果要自定义非检查异常，则扩展自RuntimeException。
+    * 自定义的异常应该总是包含如下的构造函数：
+        ```java
+        public class IOException extends Exception {
+            static final long serialVersionUID = 7818375828146090155L;
+            public IOException() { super(); }
+            public IOException(String message) { super(message); }
+            public IOException(String message, Throwable cause) { super(message, cause); }
+            public IOException(Throwable cause) { super(cause); }
+        }
+        ```
+    * 当子类重写父类的带有 throws声明的函数时，其throws声明的异常必须在父类异常的可控范围内——用于处理父类的throws方法的异常处理器，必须也适用于子类的这个带throws方法 。这是为了支持多态。
+    * Java程序可以是多线程的。每一个线程都是一个独立的执行流，独立的函数调用栈。如果程序只有一个线程，那么没有被任何代码处理的异常会导致程序终止。如果是多线程的，那么没有被任何代码处理的异常仅仅会导致异常所在的线程结束。
+* 异常链化:以一个异常对象为参数构造新的异常对象。新的异对象将包含先前异常的信息。这项技术主要是异常类的一个带Throwable参数的函数来实现的。这个当做参数的异常，我们叫他根源异常(cause)。
+* Refs:
+    * > https://cloud.tencent.com/developer/article/1052708
+    * > https://www.javatt.com/p/1004
+
 ### Checked vs Unchecked
-### Catch Block
+* 非检查异常(unckecked exception)：Error和RuntimeException以及他们的子类。javac在编译时，不会提示和发现这样的异常，不要求在程序处理这些异常。所以如果愿意，我们可以编写代码处理(使用try…catch…finally)这样的异常，也可以不处理。对于这些异常，我们应该修正代码，而不是去通过异常处理器处理。这样的异常发生的原因多半是代码写的有问题。
+* 检查异常(checked exception)：除了Error和RuntimeException的其它异常。javac强制要求程序员为这样的异常做预备处理工作(使用try…catch…finally或者throws)。在方法中要么用try-catch语句捕获它并处理，要么用throws子句声明抛出它，否则编译不会通过。这样的异常一般是由程序的运行环境导致的。因为程序可能被运行在各种未知的环境下，而程序员无法干预用户如何使用他编写的程序，于是程序员就应该为这样的异常时刻准备着。
+* Refs:
+    * > https://cloud.tencent.com/developer/article/1052708
 
 ## Reflection
+* 什么是反射？
+    * Java反射就是在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法；对于任意一个对象，都能够调用它的任意方法和属性；并且能改变它的属性
+* 反射能做什么？
+    * 我们知道反射机制允许程序在运行时取得任何一个已知名称的class的内部信息，包括包括其modifiers(修饰符)，fields(属性)，methods(方法)等，并可于运行时改变fields内容或调用methods。那么我们便可以更灵活的编写代码，代码可以在运行时装配，无需在组件之间进行源代码链接，降低代码的耦合度；还有动态代理的实现等等；
+    * 但是需要注意的是反射使用不当会造成很高的资源消耗。
+* 反射的具体实现
+    ```java
+    package com.ys.reflex;
+    public class Person {
+        private String name = "Tom";
+        public int age = 18;
+        public Person() {}
+        private void say() { System.out.println("private say()..."); }
+        public void work() { System.out.println("public work()..."); }
+    }
+    ```
+    * 得到Class的三种方式
+    ```java
+    　　Person p1 = new Person();
+    　　Class c1 = p1.getClass();
+    　　Class c2 = Person.class;
+    　　Class c3 = Class.forName("com.ys.reflex.Person");
+    ```
+* Java 提供反射机制，依赖于 Class 类和 java.lang.reflect 类库。其主要的类如下：
+    * Class：表示类或者接口
+    * Field：表示类中的成员变量
+    * Method：表示类中的方法
+    * Constructor：表示类的构造方法
+    * Array：该类提供了动态创建数组和访问数组元素的静态方法
+* Refs:
+    * > https://www.cnblogs.com/ysocean/p/6516248.html
+
 ### java.lang.Class
-### Class Modifiers
-### Instantiation using Reflection
+* Class类是Java中用来表示运行时类型信息的对应类。实际上在Java中每个类都有一个Class对象，每当我们编写并且编译一个新创建的类就会将相关信息写到.class文件里。当我们 new一个新对象或者引用静态成员变量时，JVM中的类加载器子系统会将对应Class对象加载到JVM中，然后JVM再根据这个类型信息相关的Class对象创建我们需要实例对象或者提供静态变量的引用值。我们可以将Class类，称为类类型，一个Class对象，称为类类型对象。
+* Class 类有以下的特点：
+    * Class类也是类的一种，class则是关键字。
+    * Class类只有一个私有的构造函数，只有JVM能够创建Class类的实例。
+    * 对于同一类的对象，在JVM中只有唯一一个对应的Class类实例来描述其类型信息。(同一个类：即包名+类名相同，且由同一个类加载器加载)
+* 三种方法可以创建Class对象
+    * `Class.forName(“className”)`:因为Class类没有公共的构造方法,所以存在一个静态的方法返回Class对象,即Class.forName()用于创建Class对象。要创建的Class对象的类名在运行时确定,不存在则抛出ClassNotFoundException。(注意className为类的完整包名)
+    * `Myclass.class`:当我们在类名后面跟上.class时，就会返回当前类的Class对象。它主要应用于原始数据类型，并且仅在我们知道类的名称时才使用。要创建的Class对象的类名在编译时确定。
+    * `obj.getClass()`: 此方法存在时Object类中，它返回此obj对象的运行时类。
+* Refs:
+    * > https://juejin.im/post/5b6cfdea5188251ace75f280
+    * > https://juejin.im/post/5c6547ee5188252f3048262b
+
 ### Classloaders
+* 而程序在启动的时候，并不会一次性加载程序所要用的所有class文件，而是根据程序的需要，通过Java的类加载机制(ClassLoader)来动态加载某个class文件到内存当中的，从而只有class文件被载入到了内存之后，才能被其它class所引用。所以ClassLoader就是用来动态加载class文件到内存当中用的。
+* 三个Java默认ClassLoader
+    * BootStrap ClassLoader：称为启动类加载器，是Java类加载层次中最顶层的类加载器，负责加载JDK中的核心类库，如：rt.jar、resources.jar、charsets.jar等。
+    * Extension ClassLoader：称为扩展类加载器，负责加载Java的扩展类库，默认加载JAVA_HOME/jre/lib/ext/目下的所有jar。
+    * App ClassLoader：称为系统类加载器，负责加载应用程序classpath目录下的所有jar和class文件。
+* ClassLoader加载类的原理
+    * ClassLoader使用的是双亲委托模型来搜索类的，每个ClassLoader实例都有一个父类加载器的引用(不是继承的关系，是一个包含的关系)，虚拟机内置的类加载器(Bootstrap ClassLoader)本身没有父类加载器，但可以用作其它ClassLoader实例的的父类加载器。当一个ClassLoader实例需要加载某个类时，它会试图亲自搜索某个类之前，先把这个任务委托给它的父类加载器，这个过程是由上至下依次检查的，首先由最顶层的类加载器Bootstrap ClassLoader试图加载，如果没加载到，则把任务转交给Extension ClassLoader试图加载，如果也没加载到，则转交给App ClassLoader 进行加载，如果它也没有加载得到的话，则返回给委托的发起者，由它到指定的文件系统或网络等URL中加载该类。如果它们都没有加载到这个类时，则抛出ClassNotFoundException异常。否则将这个找到的类生成一个类的定义，并将它加载到内存当中，最后返回这个类在内存中的Class实例对象。
+    * 使用双亲委托这种模型是因为这样可以避免重复加载，当父亲已经加载了该类的时候，就没有必要子ClassLoader再加载一次。考虑到安全因素，我们试想一下，如果不使用这种委托模式，那我们就可以随时使用自定义的String来动态替代java核心api中定义的类型，这样会存在非常大的安全隐患，而双亲委托的方式，就可以避免这种情况，因为String已经在启动时就被引导类加载器(Bootstrcp ClassLoader)加载，所以用户自定义的ClassLoader永远也无法加载一个自己写的String，除非你改变JDK中ClassLoader搜索类的默认算法。
+    * JVM在判定两个class是否相同时，不仅要判断两个类名是否相同，而且要判断是否由同一个类加载器实例加载的。只有两者同时满足的情况下，JVM才认为这两个class是相同的。就算两个class是同一份class字节码，如果被两个不同的ClassLoader实例所加载，JVM也会认为它们是两个不同class。比如网络上的一个Java类org.classloader.simple.NetClassLoaderSimple，javac编译之后生成字节码文件NetClassLoaderSimple.class，ClassLoaderA和ClassLoaderB这两个类加载器并读取了NetClassLoaderSimple.class文件，并分别定义出了java.lang.Class实例来表示这个类，对于JVM来说，它们是两个不同的实例对象，但它们确实是同一份字节码文件，如果试图将这个Class实例生成具体的对象进行转换时，就会抛运行时异常java.lang.ClassCaseException，提示这是两个不同的类型。
+* 自定义ClassLoader
+    * 定义自已的类加载器分为两步：
+        1. 继承java.lang.ClassLoader
+        2. 重写父类的findClass方法
+* Refs:
+    * > https://blog.csdn.net/briblue/article/details/54973413
+    * > https://blog.csdn.net/xyang81/article/details/7292380
 
 ## Serialization
 
 ## Miscellaneous Topics
 ### Types
-### Keywords
+* statically typed language
+    * Dynamically-typed languages perform type checking at runtime, while statically typed languages perform type checking at compile time. Scripts written in dynamically-typed languages can compile even if they contain errors that will prevent the script from running properly (if at all). If a script written in a statically-typed language contains errors, it will fail to compile until the errors have been fixed.
+* types in Java
+    * Primitive Types
+        * int
+        * boolean
+        * char
+        * float
+        * double
+        * short
+        * long
+        * byte
+    * Reference Types
+        * class type
+        * interface type
+        * type variable
+        * array type
+            * arrays are also objects and have Object as their supertype.
+    * Note that null is a special type with no name. It is impossible to declare a variable of the null type or to cast to the null type.
+
 ### Annotations
+* Annotation的概念
+    * 注解是一种可以添加到Java源代码的元数据。
+    * 类、方法、变量、参数、包都可以被注解。
+    * 注解对注解的代码并没有直接的影响。
+    * 注解仅仅是个标记，注解之所以起作用是对其解析后做了相应的处理。
+* Annotation分类
+    * 标准Annotation
+        * 标准Annotation是指Java内置的三个Annnotaion:
+        * @Override: 用于修饰此方法覆盖了父类的方法
+        * @Deprecated: 用于修饰已经过时的方法
+        * @SuppressWarnnings: 用于通知java编译器禁止特定的编译警告
+    * 元Annotation(注解的注解)
+        * 元Annotation是用来定义Annotation的Annotation
+        * 元Annotation可以定义Annotation的作用范围,使用在什么元素上等
+        * 元注解共有四种
+            * @Retention
+                ```java
+                import java.lang.annotation.Retention;
+                import java.lang.annotation.RetentionPolicy;
+                @Retention(RetentionPolicy.RUNTIME)
+                @interface MyAnnotation {
+                    String   value() default "";
+                }
+                ```
+                * 用来定义当前注解的作用范围，如果我们要把我们的自定义注解限制为运行时有效，可选值SOURCE(源码时)、CLASS(编译时)、RUNTIME(运行时)、默认为CLASS
+                    * RetentionPolicy.SOURCE: 注解只存在于源码中，不会存在于.class文件中，在编译时会被忽略掉。(源码可用)
+                    * RetentionPolicy.CLASS: 注解只存在于.class文件中，在编译期有效，但是在运行期会被忽略掉，这也是默认范围。(源码+CLASS可用)
+                    * RetentionPolicy.RUNTIME：在运行期有效，JVM在运行期通过反射获得注解信息。(源码+CLASS+运行时均可用)
+            * @Target
+                ```java
+                import java.lang.annotation.ElementType;
+                import java.lang.annotation.Target;
+                @Target({ElementType.METHOD})
+                public @interface MyAnnotation {
+                    String   value();
+                }
+                ```
+                * 注解用来约束自定义注解可以注解Java的哪些元素。未标注Target表示无限制，可修饰所有元素。
+                    * ElementType.ANNOTATION_TYPE: 元注解类型，只能用来注解其它的注解，例如@Target和@Retention
+                    * ElementType.CONSTRUCTOR
+                    * ElementType.FIELD
+                    * ElementType.LOCAL_VARIABLE
+                    * ElementType.METHOD
+                    * ElementType.PACKAGE
+                    * ElementType.PARAMETER
+                    * ElementType.TYPE: 可以用来注解任何类型的java类，如类、接口、枚举、或者注解类
+            * @Inherited
+                * 默认情况下,父类的注解不会被子类继承。
+                * 注解表示当前注解会被注解类的子类继承
+            * @Documented
+                * 作用是告诉JavaDoc工具，当前注解本身也要显示在Java Doc中。
+    * 自定义Annotation
+        * 创建自定义Annotation流程
+            1. 自定义注解名称
+            2. 设置自定义Annotation的保留范围和目标
+            3. 设置自定义Annotation的注解参数
+                ```java
+                @Retention( RetentionPolicy.RUNTIME )
+                @Target( ElementType.TYPE )
+                public @interface CustomAnnotation{
+                    public enum Skill{JAVA,ANDROID,IOS}
+                    Skill mySkill() default Skill.ANDROID;
+                    String attr1();
+                    int attr2() default 100;
+                    public boolean attr3() default false;
+                }
+                @Retention( RetentionPolicy.RUNTIME )
+                @Target( ElementType.TYPE )
+                public @interface CustomAnnotation{
+                    String value();
+                }
+                ```
+        * 自定义Annotation的注解参数的默认值
+            * 注解元素必须有确定的值，要么在定义注解的默认值中指定，要么在使用注解时指定，非基本类型的注解元素的值不可为null。
+* Refs:
+    * > https://juejin.im/post/5af415ba6fb9a07ac76ed820
+    * > https://blog.csdn.net/vbirdbest/article/details/78822646
+    * > https://blog.csdn.net/suifeng3051/article/details/51801018
+
 ### Boxing
+* 装箱就是自动将基本数据类型转换为包装器类型
+* 在装箱的时候自动调用的是Integer的valueOf(int)方法
+* Refs:
+    * > https://blog.csdn.net/hp910315/article/details/48654777
+    * > https://www.cnblogs.com/dolphin0520/p/3780005.html
+
 ### Unboxing
+* 拆箱就是自动将包装器类型转换为基本数据类型
+* 在拆箱的时候自动调用的是Integer的intValue方法
+* Refs:
+    * > https://blog.csdn.net/hp910315/article/details/48654777
+    * > https://www.cnblogs.com/dolphin0520/p/3780005.html
+
 ### Package
 ### Strings
 ### Casting
