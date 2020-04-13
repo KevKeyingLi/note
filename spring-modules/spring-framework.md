@@ -1,17 +1,21 @@
-- [The IoC Container](#The_IoC_Container)
-    * [Spring IoC Container and Beans](#Spring_IoC_Container_and_Beans)
-    * [Container Overview](#Container_Overview)
-        * [Configuration Metadata](#Configuration_Metadata)
-        * [Instantiating a Container](#Instantiating_a_Container)
-        * [Using the Container](#Using_the_Container)
-    * [Bean Overview](#Bean_Overview)
-        * [Naming Beans](#Naming_Beans)
-        * [Instantiating Beans](#Instantiating_Beans)
+- [The IoC Container](#The-IoC-Container)
+    * [Spring IoC Container and Beans](#Spring-IoC-Container-and-Beans)
+    * [Container Overview](#Container-Overview)
+        * [Configuration Metadata](#Configuration-Metadata)
+        * [Instantiating a Container](#Instantiating-a-Container)
+        * [Using the Container](#Using-the-Container)
+    * [Bean Overview](#Bean-Overview)
+        * [Naming Beans](#Naming-Beans)
+        * [Instantiating Beans](#Instantiating-Beans)
     * [Dependencies](#Dependencies)
-        * [Dependency Injection](#Dependency_Injection)
-        * [Dependencies and Configuration in Detail](#Dependencies_and_Configuration_in_Detail)
-        * [Using depends-on](#Using_depends_on)
-        * [Lazy-initialized Beans](#Lazy_initialized_Beans)
+        * [Dependency Injection](#Dependency-Injection)
+        * [Dependencies and Configuration in Detail](#Dependencies-and-Configuration-in-Detail)
+        * [Using depends-on](#Using-depends-on)
+        * [Lazy-initialized Beans](#Lazy-initialized-Beans)
+        * [Autowiring Collaborators](#Autowiring-Collaborators)
+        * [Method Injection](#Method-Injection)
+    * [Bean Scopes](#Bean-Scopes)
+        * [The Singleton Scope](#The-Singleton-Scope)
 ---
 * > https://docs.spring.io/spring/docs/5.2.5.RELEASE/spring-framework-reference/
 ---
@@ -602,11 +606,151 @@
     <bean name="not.lazy" class="com.something.AnotherBean"/>
     ```
     * When the preceding configuration is consumed by an `ApplicationContext`, the lazy bean is not eagerly pre-instantiated when the `ApplicationContext` starts, whereas the `not.lazy` bean is eagerly pre-instantiated.
+* However, when a lazy-initialized bean is a dependency of a singleton bean that is not lazy-initialized, the `ApplicationContext` creates the lazy-initialized bean at startup, because it must satisfy the singleton’s dependencies. The lazy-initialized bean is injected into a singleton bean elsewhere that is not lazy-initialized.
+* You can also control lazy-initialization at the container level by using the `default-lazy-init` attribute on the `<beans/>` element
+```xml
+<beans default-lazy-init="true"></beans>
+```
 
 
+#### Autowiring Collaborators
+* The Spring container can autowire relationships between collaborating beans. You can let Spring resolve collaborators (other beans) automatically for your bean by inspecting the contents of the ApplicationContext.
+* Autowiring has the following advantages:
+    * Autowiring can significantly reduce the need to specify properties or constructor arguments. 
+    * Autowiring can update a configuration as your objects evolve. Thus autowiring can be especially useful during development, without negating the option of switching to explicit wiring when the code base becomes more stable.
+* We can specify the autowire mode for a bean definition with the `autowire` attribute of the `<bean/>` element.
+* The autowiring functionality has four modes. 
+    * no
+        * No autowiring. Bean references must be defined by `ref` elements. 
+    * byName
+        * Autowiring by property name. Spring looks for a bean with the same name as the property that needs to be autowired. 
+    * byType
+        * Lets a property be autowired if exactly one bean of the property type exists in the container. If more than one exists, a fatal exception is thrown, which indicates that you may not use byType autowiring for that bean. If there are no matching beans, nothing happens (the property is not set).
+    * constructor
+        * Analogous to byType but applies to constructor arguments. If there is not exactly one bean of the constructor argument type in the container, a fatal error is raised.
 
+##### Limitations and Disadvantages of Autowiring
+* Autowiring works best when it is used consistently across a project. If autowiring is not used in general, it might be confusing to developers to use it to wire only one or two bean definitions.
+* limitations and disadvantages of autowiring:
+    * Explicit dependencies in `property` and `constructor-arg` settings always override autowiring. You cannot autowire simple properties such as primitives, Strings, and Classes (and arrays of such simple properties). This limitation is by-design.
+    * Autowiring is less exact than explicit wiring. Spring is careful to avoid guessing in case of ambiguity that might have unexpected results. The relationships between your Spring-managed objects are no longer documented explicitly.
+    * Wiring information may not be available to tools that may generate documentation from a Spring container.
+    * Multiple bean definitions within the container may match the type specified by the setter method or constructor argument to be autowired. For arrays, collections, or Map instances, this is not necessarily a problem. However, for dependencies that expect a single value, this ambiguity is not arbitrarily resolved. If no unique bean definition is available, an exception is thrown.
+* In the latter scenario, you have several options:
+    * Abandon autowiring in favor of explicit wiring.
+    * Avoid autowiring for a bean definition by setting its `autowire-candidate` attributes to `false`.
+    * Designate a single bean definition as the primary candidate by setting the primary attribute of its `<bean/>` element to true.
+    * Implement the more fine-grained control available with annotation-based configuration.
 
+##### Excluding a Bean from Autowiring
+* On a per-bean basis, you can exclude a bean from autowiring. In Spring’s XML format, set the `autowire-candidate` attribute of the `<bean/>` element to `false`. The container makes that specific bean definition unavailable to the autowiring infrastructure (including annotation style configurations such as `@Autowired`).
+* `The autowire-candidate` attribute is designed to only affect type-based autowiring. It does not affect explicit references by name, which get resolved even if the specified bean is not marked as an autowire candidate. As a consequence, autowiring by name nevertheless injects a bean if the name matches.
 
+#### Method Injection
+* In most application scenarios, most beans in the container are singletons. When a singleton bean needs to collaborate with another singleton bean or a non-singleton bean needs to collaborate with another non-singleton bean, you typically handle the dependency by defining one bean as a property of the other. A problem arises when the bean lifecycles are different. Suppose singleton bean A needs to use non-singleton (prototype) bean B, perhaps on each method invocation on A. The container creates the singleton bean A only once, and thus only gets one opportunity to set the properties. The container cannot provide bean A with a new instance of bean B every time one is needed.
+* A solution is to forego some inversion of control. You can make bean A aware of the container by implementing the `ApplicationContextAware` interface, and by making a `getBean("B")` call to the container ask for (a typically new) bean B instance every time bean A needs it.
+    ```java
+    // a class that uses a stateful Command-style class to perform some processing
+    package fiona.apple;
+    // Spring-API imports
+    import org.springframework.beans.BeansException;
+    import org.springframework.context.ApplicationContext;
+    import org.springframework.context.ApplicationContextAware;
+    public class CommandManager implements ApplicationContextAware {
+        private ApplicationContext applicationContext;
+        public Object process(Map commandState) {
+            // grab a new instance of the appropriate Command
+            Command command = createCommand();
+            // set the state on the (hopefully brand new) Command instance
+            command.setState(commandState);
+            return command.execute();
+        }
+        protected Command createCommand() {
+            // notice the Spring API dependency!
+            return this.applicationContext.getBean("command", Command.class);
+        }
+        public void setApplicationContext(
+                ApplicationContext applicationContext) throws BeansException {
+            this.applicationContext = applicationContext;
+        }
+    }
+    ```
+* The preceding is not desirable, because the business code is aware of and coupled to the Spring Framework. Method Injection, a somewhat advanced feature of the Spring IoC container, lets you handle this use case cleanly.
+
+##### Lookup Method Injection
+* Lookup method injection is the ability of the container to override methods on container-managed beans and return the lookup result for another named bean in the container. The Spring Framework implements this method injection by using bytecode generation from the CGLIB library to dynamically generate a subclass that overrides the method.
+* In the case of the CommandManager class in the previous code snippet, the Spring container dynamically overrides the implementation of the createCommand() method. The CommandManager class does not have any Spring dependencies.
+    ```java
+    package fiona.apple;
+    // no more Spring imports!
+    public abstract class CommandManager {
+        public Object process(Object commandState) {
+            // grab a new instance of the appropriate Command interface
+            Command command = createCommand();
+            // set the state on the (hopefully brand new) Command instance
+            command.setState(commandState);
+            return command.execute();
+        }
+        // okay... but where is the implementation of this method?
+        protected abstract Command createCommand();
+    }
+    ```
+* In the client class that contains the method to be injected, the method to be injected requires a signature of the following form:
+    ```xml
+    <public|protected> [abstract] <return-type> theMethodName(no-arguments);
+    ```
+* If the method is `abstract`, the dynamically-generated subclass implements the method. Otherwise, the dynamically-generated subclass overrides the concrete method defined in the original class. 
+    ```xml
+    <!-- a stateful bean deployed as a prototype (non-singleton) -->
+    <bean id="myCommand" class="fiona.apple.AsyncCommand" scope="prototype"></bean>
+    <!-- commandProcessor uses statefulCommandHelper -->
+    <bean id="commandManager" class="fiona.apple.CommandManager">
+        <lookup-method name="createCommand" bean="myCommand"/>
+    </bean>
+    ```
+* The bean identified as `commandManager` calls its own `createCommand()` method whenever it needs a new instance of the `myCommand` bean. You must be careful to deploy the `myCommand` bean as a prototype if that is actually what is needed. If it is a singleton, the same instance of the `myCommand` bean is returned each time.
+* Alternatively, within the annotation-based component model, you can declare a lookup method through the `@Lookup` annotation, as the following example shows:
+    ```java
+    public abstract class CommandManager {
+        public Object process(Object commandState) {
+            Command command = createCommand();
+            command.setState(commandState);
+            return command.execute();
+        }
+        @Lookup("myCommand")
+        protected abstract Command createCommand();
+    }
+    ```
+* Or, more idiomatically, you can rely on the target bean getting resolved against the declared return type of the lookup method:
+    ```java
+    public abstract class CommandManager {
+        public Object process(Object commandState) {
+            MyCommand command = createCommand();
+            command.setState(commandState);
+            return command.execute();
+        }
+        @Lookup
+        protected abstract MyCommand createCommand();
+    }
+    ```
+
+### Bean Scopes
+* You can control not only the various dependencies and configuration values that are to be plugged into an object that is created from a particular bean definition but also control the scope of the objects created from a particular bean definition. This approach is powerful and flexible, because you can choose the scope of the objects you create through configuration instead of having to bake in the scope of an object at the Java class level. 
+* The Spring Framework supports six scopes, four of which are available only if you use a web-aware `ApplicationContext`. 
+    * singleton
+        * (Default) Scopes a single bean definition to a single object instance for each Spring IoC container.
+    * prototype
+        * Scopes a single bean definition to any number of object instances.
+    * request
+        * Scopes a single bean definition to the lifecycle of a single HTTP request. That is, each HTTP request has its own instance of a bean created off the back of a single bean definition. Only valid in the context of a web-aware Spring ApplicationContext.
+    * session
+        * Scopes a single bean definition to the lifecycle of an HTTP Session. Only valid in the context of a web-aware Spring ApplicationContext.
+    * application
+        * Scopes a single bean definition to the lifecycle of a ServletContext. Only valid in the context of a web-aware Spring ApplicationContext.
+    * websocket
+        * Scopes a single bean definition to the lifecycle of a WebSocket. Only valid in the context of a web-aware Spring ApplicationContext.
+
+#### The Singleton Scope
 
 
 
