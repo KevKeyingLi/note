@@ -11,13 +11,23 @@
         * [俯瞰Spring风景线](#俯瞰Spring风景线)
             * [Spring模块](#Spring模块)
     * [装配Bean](#装配Bean)
+        * [Spring配置的可选方案](#Spring配置的可选方案)
+        * [自动化装配bean](#自动化装配bean)
+            * [创建可被发现的bean](#创建可被发现的bean)
+            * [为组件扫描的bean命名](#为组件扫描的bean命名)
+            * [设置组件扫描的基础包](#设置组件扫描的基础包)
+            * [通过为bean添加注解实现自动装配](#通过为bean添加注解实现自动装配)
+            * [验证自动装配](#验证自动装配)
+        * [通过Java代码装配bean](#通过Java代码装配bean)
+            * [创建配置类](#创建配置类)
+            * [借助JavaConfig实现注入](#借助JavaConfig实现注入)
 
 ---
 
 ## Spring的核心
 ### Spring之旅
 #### 简化Java开发
-* 为了降低Java开发的复杂性，Spring采取了以下4种关键策略：
+* 为了降低Java开发的复杂性，Spring采取了以下4种关键策略: 
     * 基于POJO的轻量级和最小侵入性编程；
     * 通过依赖注入和面向接口实现松耦合；
     * 基于切面和惯例进行声明式编程；
@@ -276,17 +286,17 @@
 
 ##### 使用应用上下文
 * Spring 自带了多种类型的应用上下文，下面罗列的几个是你最有可能遇到的。
-    * `AnnotationConfigApplicationContext`：从一个或多个基于Java的配置类中加载Spring应用上下文。
-    * `AnnotationConfigWebApplicationContext`：从一个或多个基于Java的配置类中加载Spring Web应用上下文。
-    * `ClassPathXmlApplicationContext`：从类路径下的一个或多个XML配置文件中加载上下文定义，把应用上下文的定义文件作为类资源。
-    * `FileSystemXmlapplicationcontext`：从文件系统下的一个或多个XML配置文件中加载上下文定义。
-    * `XmlWebApplicationContext`：从Web应用下的一个或多个XML配置文件中加载上下文定义。
+    * `AnnotationConfigApplicationContext`: 从一个或多个基于Java的配置类中加载Spring应用上下文。
+    * `AnnotationConfigWebApplicationContext`: 从一个或多个基于Java的配置类中加载Spring Web应用上下文。
+    * `ClassPathXmlApplicationContext`: 从类路径下的一个或多个XML配置文件中加载上下文定义，把应用上下文的定义文件作为类资源。
+    * `FileSystemXmlapplicationcontext`: 从文件系统下的一个或多个XML配置文件中加载上下文定义。
+    * `XmlWebApplicationContext`: 从Web应用下的一个或多个XML配置文件中加载上下文定义。
 * 无论是从文件系统中装载应用上下文还是从类路径下装载应用上下文，将bean加载到bean工厂的过程都是相似的。
     ```java
     ApplicationContext context = new FileSystemXmlApplicationContext("c:/knight.xml");
     ApplicationContext context = new ClassPathXmlApplicationContext("knight.xml");
     ```
-    * 使用`FileSystemXmlApplicationContext`和使用`ClassPathXmlApplicationContext`的区别在于：       
+    * 使用`FileSystemXmlApplicationContext`和使用`ClassPathXmlApplicationContext`的区别在于:        
         * `FileSystemXmlApplicationContext`在指定的文件系统路径下查找`knight.xml`文件；
         * `ClassPathXmlApplicationContext`是在所有的类路径(包含JAR文件)下查找`knight.xml`文件。
     ```java
@@ -335,3 +345,292 @@
     * 测试
 
 ### 装配Bean
+#### Spring配置的可选方案
+* 当描述bean如何进行装配时，Spring具有非常大的灵活性，它提供了三种主要的装配机制:
+    * 在XML中进行显式配置。
+    * 在Java中进行显式配置。
+    * 隐式的bean发现机制和自动装配。
+* Spring的配置风格是可以互相搭配的，一个项目里用几种不同的装配分式。
+* 我的建议是尽可能地使用自动配置的机制。显式配置越少越好。当你必须要显式配置bean的时候(比如，有些源码不是由你来维护的，而当你需要为这些代码配置bean的时候)，我推荐使用类型安全并且比XML更加强大的JavaConfig。最后，只有当你想要使用便利的XML命名空间，并且在JavaConfig中没有同样的实现时，才应该使用XML。
+
+#### 自动化装配bean
+* 尽管你会发现这些显式装配技术非常有用，但是在便利性方面，最强大的还是Spring的自动化配置。
+* Spring 从两个角度来实现自动化装配: 
+    * 组件扫描(component scanning): Spring会自动发现应用上下文中所创建的 bean。
+    * 自动装配(autowiring): Spring自动满足bean之间的依赖。
+* 为了阐述组件扫描和装配，我们需要创建几个bean，它们代表了一个音响系统中的组件。首先，要创建`CompactDisc`类，Spring会发现它并将其创建为一个bean。然后，会创建一个`CDPlayer`类，让Spring发现它，并将`CompactDiscbean`注入进来。
+
+##### 创建可被发现的bean
+* CD为我们阐述DI如何运行提供了一个很好的样例。如果你不将CD插入(注入)到CD播放器中，那么CD播放器其实是没有太大用处的。所以，可以这样说CD播放器依赖于CD才能完成它的使命。
+* 首先在Java中建立CD的概念
+    ```java
+    package soundsystem;
+    public interface CompactDisc {
+        void play();
+    }
+    ```
+    * `CompactDisc`的具体内容并不重要，重要的是你将其定义为一个接口。作为接口，它定义了CD播放器对一盘CD所能进行的操作。它将CD播放器的任意实现与CD本身的耦合降低到了最小的程度。
+    * 我们还需要一个`CompactDisc`的实现，我们可以有`CompactDisc`接口的多个实现。
+* 创建其中的一个实现，带有`@Component`注解的`CompactDisc`实现类`SgtPeppers`: 
+    ```java
+    package soundsystem;
+    import org.springframework.stereotype.Component;
+    @Component
+    public class SgtPeppers implements CompactDisc {
+        private String title = "Sgt. Pepper's Lonely Hearts Club Band";  
+        private String artist = "The Beatles";
+        public void play() { System.out.println("Playing " + title + " by " + artist); }
+    }
+    ```
+* 和`CompactDisc`接口一样，`SgtPeppers`的具体内容并不重要。你需要注意的就是`SgtPeppers`类上使用了`@Component`注解。这个简单的注解表明该类会作为组件类，并告知Spring要为这个类创建bean。没有必要显式配置`SgtPeppersbean`，因为这个类使用了`@Component`注解，所以Spring会为你把事情处理妥当。
+* 组件扫描默认是不启用的。我们还需要显式配置一下Spring， 从而命令它去寻找带有`@Component`注解的类，并为其创建bean。以下的配置类展现了完成这项任务的最简洁配置，`@ComponentScan`注解启用了组件扫描:
+    ```java
+    package soundsystem;
+    import org.springframework.context.annotation.ComponentScan;
+    import org.springframework.context.annotation.Configuration;
+    @Configuration
+    @ComponentScan
+    public class CDPlayerConfig { 
+    }
+    ```
+    * 类`CDPlayerConfig`通过Java代码定义了Spring的装配规则，并没有显式地声明任何bean，只不过它使用了`@ComponentScan`注解，这个注解能够在Spring中启用组件扫描。
+    * 如果没有其他配置的话，`@ComponentScan`默认会扫描与配置类相同的包。因为`CDPlayerConfig`类位于`soundsystem`包中，因此Spring将会扫描这个包以及这个包下的所有子包，查找带有`@Component`注解的类。这样的话，就能发现`CompactDisc`，并且会在Spring中自动为其创建一个bean。
+* 使用XML来启用组件扫描
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:c="http://www.springframework.org/schema/c"
+    xmlns:p="http://www.springframework.org/schema/p"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+        <context:component-scan base-package="soundsystem" />
+    </beans>
+    ```
+* 创建一个简单的JUnit测试，它会创建Spring上下文，并判断`CompactDisc`是不是真的创建出来了。
+    ```java
+    package soundsystem;
+    import static org.junit.Assert.*;
+    import org.junit.Rule;
+    import org.junit.Test;
+    import org.junit.contrib.java.lang.system.StandardOutputStreamLog;
+    import org.junit.runner.RunWith;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.test.context.ContextConfiguration;
+    import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+    @RunWith(SpringJUnit4ClassRunner.class)
+    @ContextConfiguration(classes=CDPlayerConfig.class)
+    public class CDPlayerTest {
+        @Autowired
+        private CompactDisc cd;
+        @Test
+        public void cdShouldNotBeNull() { assertNotNull(cd); }
+    }
+    ```
+    * `CDPlayerTest`使用了Spring的`SpringJUnit4ClassRunner`，以便在测试开始的时候自动创建Spring的应用上下文。
+    * 注解`@ContextConfiguration`会告诉它需要在`CDPlayerConfig`中加载配置。
+    * 因为`CDPlayerConfig`类中包含了`@ComponentScan`，因此最终的应用上下文中应该包含`CompactDiscbean`。
+    * 为了证明这一点，在测试代码中有一个`CompactDisc`类型的属性，并且这个属性带有`@Autowired`注解，以便于将`CompactDiscbean`注入到测试代码之中。
+    * 最后，会有一个简单的测试方法断言`cd`属性不为null。如果它不为null的话，就意味着Spring能够发现`CompactDisc`类，自动在Spring上下文中将其创建为bean并将其注入到测试代码之中。
+
+##### 为组件扫描的bean命名
+* Spring应用上下文中所有的bean都会给定一个ID。
+    * 在前面的例子中，尽管我们没有明确地为`SgtPeppersbean`设置 ID，但Spring会根据类名为其指定一个ID。具体来讲，这个bean所给定的ID为`sgtPeppers`，也就是将类名的第一个字母变为小写。
+* 如果想为这个bean设置不同的ID，你所要做的就是将期望的ID作为值传递给`@Component`注解。
+    * 如果想将这个bean标识为`lonelyHeartsClub`，那么你需要将`SgtPeppers`类的`@Component`注解配置为如下
+        ```java
+        @Componet("lonelyHeartsClub")
+        public class SgtPeppers implements CompactDisc {
+            // ......
+        }
+        ```
+* 另外一种为bean命名的方式是使用Java依赖注入规范中所提供的`@Named`注解来为bean设置ID
+    ```java
+    import javax.inject.Named;
+    @Named("lonelyHeartsClub")
+    public class SgtPeppers implements CompactDisc {
+        // ......
+    }
+    ```
+* `@Named`和`@Component`两者之间有一些细微的差异，但是在大多数场景中，它们是可以互相替换的。
+
+##### 设置组件扫描的基础包
+* `@ComponentScan`默认情况扫描配置类所在的基础包。如配置文件不在基础包，所需要做的就是在`@ComponentScan`的`value`属性中指明包的名称。
+    ```java
+    @Configuration
+    @ComponentScan("soundsystem")
+    public class CDPlayerConfig { }
+    ```
+* 如果想更加清晰地表明你所设置的是基础包，那么你可以通过`basePackages`属性进行配置。
+    ```java
+    @Configuration
+    @ComponentScan(basePackages="soundsystem")
+    public class CDPlayerConfig { }
+    ```
+* `basePackages`属性使用的是复数形式，可以设置多个基础包，只需要将`basePackages`属性设置为要扫描包的一个数组即可。
+    ```java
+    @ComponentScan(basePackages={"soundsystem", "video"})
+    ```
+* 以String类型设置的基础包是可以的，但这种方法是类型不安全。`@ComponentScan`还提供了将其指定为包中所包含的类或接口。
+    ```java
+    @ComponentScan(basePackageClasses={CDPlayer.class, DVDPlayer.class})
+    ```
+    * `basePackages`属性被替换成了`basePackageClasses`。
+    * 不是再使用String类型的名称来指定包，为`basePackageClasses`属性所设置的数组中包含了类。这些类所在的包将会作为组件扫描的基础包。
+    * 尽管在样例中，我为`basePackageClasses`设置的是组件类，但是你可以考虑在包中创建一个用来进行扫描的空标记接口。通过标记接口的方式，你依然能够保持对重构友好的接口引用，但是可以避免引用任何实际的应用程序代码(在稍后重构中，这些应用代码有可能会从想要扫描的包中移除掉)。
+* 很多对象会依赖其他的对象才能完成任务，我们就需要有一种方法能够将组件扫描得到的bean和它们的依赖装配在一起，需要自动装配。
+
+##### 通过为bean添加注解实现自动装配
+* 自动装配就是让Spring自动满足bean依赖的一种方法，在满足依赖的过程中，会在Spring应用上下文中寻找匹配某个bean需求的其他bean。为了声明要进行自动装配，我们可以借助Spring的`@Autowired`注解。
+    ```java
+    package soundsystem;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.stereotype.Component;
+    @Component
+    public class CDPlayer implements MediaPlayer {
+        private CompactDisc cd;
+        @Autowired
+        public CDPlayer(CompactDisc cd) { this.cd = cd; }
+        public void play() { cd.play(); }
+    }
+    ```
+    * 它的构造器上添加了`@Autowired`注解，这表明当Spring创建`CDPlayerbean`的时候，会通过这个构造器来进行实例化并且会传入一个可设置给`CompactDisc`类型的bean，将一个`CompactDisc`注入到`CDPlayer`之中。
+* `@Autowired`注解还能用在属性的Setter方法上。
+    ```java
+    @Autowired
+    public void setCompactDisc(CompactDisc cd){
+        this.cd = cd;
+    }
+    ```
+    * 在Spring初始化bean之后，它会尽可能得去满足bean的依赖。
+* 如果没有匹配的bean，那么在应用上下文创建的时候，Spring会抛出一个异常。为了避免异常的出现，你可以将`@Autowired`的`required`属性设置为false。
+    ```java
+    @Autowired(required=false)
+    public CDPlayer(CompactDisc cd) {
+        this.cd = cd;
+    }
+    ```
+    * 将`required`属性设置为false时，Spring会尝试执行自动装配，但是如果没有匹配的bean的话，Spring将会让这个bean处于未装配的状态。如果在你的代码中没有进行null检查的话，这个处于未装配状态的属性有可能会出现`NullPointerException`。
+* 如果有多个bean都能满足依赖关系的话，Spring将会抛出一个异常，表明没有明确指定要选择哪个bean进行自动装配。
+* `@Autowired`是Spring特有的注解，可以考虑将其替换为`@Inject`。`@Inject`注解来源于Java依赖注入规范，和`@Autowired`之间有着一些细微的差别，但是在大多数场景下，它们都是可以互相替换的。
+
+##### 验证自动装配
+* 验证Spring是否将把一个可分配给`CompactDisc`类型的bean自动注入进来。
+    ```java
+    package soundsystem;
+    import static org.junit.Assert.*;
+    import org.junit.Rule;
+    import org.junit.Test;
+    import org.junit.contrib.java.lang.system.StandardOutputStreamLog;
+    import org.junit.runner.RunWith;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.test.context.ContextConfiguration;
+    import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+    @RunWith(SpringJUnit4ClassRunner.class)
+    @ContextConfiguration(classes=CDPlayerConfig.class)
+    public class CDPlayerTest {
+        @Rule
+        public final StandardOutputStreamLog log = new StandardOutputStreamLog();
+        @Autowired
+        private MediaPlayer player;
+        @Autowired
+        private CompactDisc cd;
+        @Test
+        public void cdShouldNotBeNull() { assertNotNull(cd); }
+        @Test
+        public void play() {
+            player.play();
+            assertEquals("Playing Sgt. Pepper's Lonely Hearts Club Band by The Beatles\n", log.getLog());
+        }
+    }
+    ```
+
+#### 通过Java代码装配bean
+* 在进行显式配置的时候，有两种可选方案: Java和XML。
+* 在进行显式配置时，JavaConfig是更好的方案， 因为它更为强大、类型安全并且对重构友好。
+* JavaConfig是配置代码，这意味着它不应该包含任何业务逻辑，JavaConfig也不应该侵入到业务逻辑代码之中。
+
+##### 创建配置类
+* 创建JavaConfig类的关键在于为其添加`@Configuration`注解，`@Configuration`注解表明这个类是一个配置类，该类应该包含在Spring应用上下文中如何创建bean的细节。
+    ```java
+    package soundsystem;
+    import org.spingframework.context.annotation.Configuration;
+    @Configuration
+    public class CDPlayerConfig {}
+    ```
+* 我们都是依赖组件扫描来发现Spring应该创建的bean，移除了`@ComponentScan`注解，此时的`CDPlayerConfig`类就没有任何作用了。
+
+##### 声明简单的bean
+* 要在JavaConfig中声明bean，我们需要编写一个方法，这个方法会创建所需类型的实例，然后给这个方法添加`@Bean`注解。
+    ```java
+    @Bean
+    public CompactDisc sgtPeppers() {
+        return new SgtPeppers();
+    }
+    ```
+* `@Bean`注解会告诉Spring这个方法将会返回一个对象，该对象要注册为Spring应用上下文中的bean。方法体中包含了最终产生bean实例的逻辑。
+* 默认情况下，bean的ID与带有`@Bean`注解的方法名是一样的。在上面的code中，bean的名字将会是`sgtPeppers`。如果想为其设置成一个不同的名字的话，那么可以重命名该方法，也可以通过`name`属性指定一个不同的名字。
+    ```java
+    @Bean(name="lonelyHeartsClubBand")
+    public CompactDisc sgtPeppers() {
+        return new SgtPeppers();
+    }
+    ```
+
+##### 借助JavaConfig实现注入
+* 在JavaConfig中装配bean的最简单方式就是引用创建bean的方法。
+    ```java
+    @Bean
+    public CDPlayer cdPlayer() {
+        return new CDPlayer(sgtPeppers());
+    }
+    ```
+* `cdPlayer()`方法像`sgtPeppers()`方法一样，同样使用了`@Bean`注解，这表明这个方法会创建一个bean实例并将其注册到Spring应用上下文中。所创建的bean ID为cdPlayer，与方法的名字相同。
+* `cdPlayer()`的方法体与`sgtPeppers()`稍微有些区别。在这里并没有使用默认的构造器构建实例，而是调用了需要传入`CompactDisc`对象的构造器来创建`CDPlayer`实例。
+* `CompactDisc`是通过调用`sgtPeppers()`得到的，但情况并非完全如此。因为`sgtPeppers()`方法上添加了`@Bean`注解，Spring 将会拦截所有对它的调用，并确保直接返回该方法所创建的bean，而不是每次都对其进行实际的调用。
+    ```java
+    @Bean
+    public CDPlayer cdPlayer() {
+    return new CDPlayer(sgtPeppers());
+    }
+
+    @Bean
+    public CDPlayer anotherCDPlayer() {
+    return new CDPlayer(sgtPeppers());
+    }
+    ```
+    * 假如对`sgtPeppers()`的调用就像其他的Java方法调用一样的话，那么每个`CDPlayer`实例都会有一个自己特有的`SgtPeppers`实例。如果我们讨论的是实际的CD播放器和CD光盘的话，这么做是有意义的。如果你有两台CD播放器，在物理上并没有办法将同一张CD光盘放到两个CD播放器中。
+* 在软件领域中，我们完全可以将同一个`SgtPeppers`实例注入到任意数量的其他bean之中。默认情况下，Spring中的bean都是单例的，我们并没有必要为第二个`CDPlayer`bean创建完全相同的`SgtPeppers`实例。所以，Spring会拦截对`sgtPeppers()`的调用并确保返回的是Spring所创建的bean，也就是Spring本身在调用`sgtPeppers()`时所创建的`CompactDiscbean`。因此，两个`CDPlayer`bean会得到相同的`SgtPeppers`实例。
+* 一种理解起来更为简单的方式
+    ```java
+    @Bean
+    public CDPlayer cdPlayer(CompactDisc compactDisc) {
+        return new CDPlayer(compactDisc);
+    }
+    ```
+    * `cdPlayer()`方法请求一个`CompactDisc`作为参数。当Spring调用`cdPlayer()`创建`CDPlayerbean`的时候，它会自动装配一个`CompactDisc`到配置方法之中。然后，方法体就可以按照合适的方式来使用它。借助这种技术，`cdPlayer()`方法也能够将`CompactDisc`注入到`CDPlayer`的构造器中，而且不用明确引用`CompactDisc`的`@Bean`方法。
+* 通过这种方式引用其他的bean通常是最佳的选择，因为它不会要求将`CompactDisc`声明到同一个配置类之中。在这里甚至没有要求`CompactDisc`必须要在JavaConfig中声明，实际上它可以通过组件扫描功能自动发现或者通过XML来进行配置。你可以将配置分散到多个配置类、XML文件以及自动扫描和装配bean之中，只要功能完整健全即可。不管`CompactDisc`是采用什么方式创建出来的，Spring都会将其传入到配置方法中，并用来创建`CDPlayer`bean。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
