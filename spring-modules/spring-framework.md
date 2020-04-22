@@ -21,6 +21,16 @@
         * [通过Java代码装配bean](#通过Java代码装配bean)
             * [创建配置类](#创建配置类)
             * [借助JavaConfig实现注入](#借助JavaConfig实现注入)
+        * [通过XML装配bean](#通过XML装配bean)
+            * [创建XML配置规范](#创建XML配置规范)
+            * [声明一个简单的<bean>](#声明一个简单的<bean>)
+            * [借助构造器注入初始化bean](#借助构造器注入初始化bean)
+            * [设置属性](#设置属性)
+    * [高级装配](#高级装配)
+        * [环境与profile](#环境与profile)
+            * [配置profile bean](#配置profile-bean)
+            * [激活profile](#激活profile)
+        * [条件化的bean](#条件化的bean)
 
 ---
 
@@ -612,25 +622,455 @@
     ```
     * `cdPlayer()`方法请求一个`CompactDisc`作为参数。当Spring调用`cdPlayer()`创建`CDPlayerbean`的时候，它会自动装配一个`CompactDisc`到配置方法之中。然后，方法体就可以按照合适的方式来使用它。借助这种技术，`cdPlayer()`方法也能够将`CompactDisc`注入到`CDPlayer`的构造器中，而且不用明确引用`CompactDisc`的`@Bean`方法。
 * 通过这种方式引用其他的bean通常是最佳的选择，因为它不会要求将`CompactDisc`声明到同一个配置类之中。在这里甚至没有要求`CompactDisc`必须要在JavaConfig中声明，实际上它可以通过组件扫描功能自动发现或者通过XML来进行配置。你可以将配置分散到多个配置类、XML文件以及自动扫描和装配bean之中，只要功能完整健全即可。不管`CompactDisc`是采用什么方式创建出来的，Spring都会将其传入到配置方法中，并用来创建`CDPlayer`bean。
+* 通过Setter方法注入`CompactDisc`
+    ```java
+    @Bean
+    public CDPlayer cdPlayer(CompactDisc compactDisc) {
+        CDPlayer cdPlayer = new CDPlayer(compactDisc);
+        cdPlayer.setCompactDisc(compactDisc);
+        return cdPlayer;
+    }
+    ```
 
+#### 通过XML装配bean
+##### 创建XML配置规范
+* 在XML配置中，这意味着要创建一个XML文件，并且要以元素为根。
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context" >
+    
+    <!-- configuration details go here />
+    </beans>
+    ```
+* 用来装配bean的最基本的XML元素包含在spring-beans模式之中，在上面这个XML文件中，它被定义为根命名空间。是该模式中的一个元素，它是所有Spring配置文件的根元素。
 
+##### 声明一个简单的<bean>
+* 要在基于XML的Spring配置中声明一个bean，我们要使用springbeans模式中的另外一个元素: `<bean>`。`<bean>`元素类似于`JavaConfig`中的`@Bean`注解。
+    ```xml
+    <bean class="soundsystem.SgtPeppers" />
+    ```
+    * 因为没有明确给定ID，所以这个bean将会根据全限定类名来进行命名。
+    * 在本例中，bean的ID将会是`soundsystem.SgtPeppers#0`，其中`#0`是一个计数的形式，用来区分相同类型的其他bean。
+* 通过`id`属性为每个bean设置一个你自己选择的名字
+    ```xml
+    <bean id="compactDisc" class="soundsystem.SgtPeppers" />
+    ```
+* bean声明的一些特征
+    * 第一件需要注意的事情就是你不再需要直接负责创建`SgtPeppers`的实例，XML配置将会调用`SgtPeppers`的默认构造器来创建bean。
+    * bean的类型以字符串的形式设置在了`class`属性中，Spring的XML配置并不能从编译期的类型检查中受益。
 
+##### 借助构造器注入初始化bean
+* 具体到构造器注入，有两种基本的配置方案可供选择:
+    * `<constructor-arg>`元素
+    * `c-`命名空间
 
+###### 构造器注入bean引用
+* 例子:
+    * 已知:
+        * `CDPlayer`bean有一个接受`CompactDisc`类型的构造器
+        * 已经声明了`SgtPeppers`bean，并且`SgtPeppers`类实现了`CompactDisc`接口
+    * 在XML中声明`CDPlayer`并通过ID引用`SgtPeppers`
+        ```xml
+        <bean id="cdPlayer" class="soundsystem.CDPlayer">
+            <constructor-arg ref="compactDisc">
+        </bean>
+        ```
+        * 当Spring遇到这个`<bean>`元素时，它会创建一个`CDPlayer`实例。
+        * `<constructor-arg>`元素会告知Spring要将一个ID为`compactDisc`的bean引用传递到`CDPlayer`的构造器中。
+    * 也可以使用Spring的`c-`命名空间。
+        ```xml
+        <bean id="cdPlayer" class="soundsystem.CDPlayer" c:cd-ref="compactDisc" />
+        ```
+        ```
+        c:cd-ref="compactDisc"  
+        c-命名空间前缀:构造器参数名-注入bean引用=要注入的bean的ID
+        ```
+    * `c-`命名空间使用参数在整个参数列表中的位置信息。
+        ```xml
+        <bean id="cdPlayer" class="soundsystem.CDPlayer" c:_0-ref="compactDisc" />
+        ```
 
+###### 将字面量注入到构造器中
+* CompactDisc的一个新实现
+    ```java
+    package soundsystem;
+    import java.util.List;
+    public class BlankDisc implements CompactDisc {
+        private String title;
+        private String artist;
+        public BlankDisc(String title, String artist) {
+            this.title = title;
+            this.artist = artist;
+        }
+        public void play() { System.out.println("Playing " + title + " by " + artist); }
+    }
+    ```
+    ```xml
+    <bean id="compactDisc" class="soundsystem.BlankDisc">
+        <constructor-arg value="Sgt. Pepper's Lonely Hearts Club Band" />
+        <constructor-arg value="The Beatles" />
+    </bean>
+    ```
+    * 没有使用`ref`属性来引用其他的bean，而是使用了`value`属性，通过该属性表明给定的值要以字面量的形式注入到构造器之中。
+    * 使用`c-`命名空间
+        * 引用构造器参数的名字
+            ```xml
+            <bean id="compactDisc" class="soundsystem.BlankDisc" c:_title="Sgt. Pepper's Lonely Hearts Club Band" c:_artist="The Beatles" />
+            ```
+            * 装配字面量与装配引用的区别在于属性名中去掉了`-ref`后缀。
+        * 通过参数索引装配相同的字面量值
+            ```xml
+            <bean id="compactDisc" class="soundsystem.BlankDisc" c:_0="Sgt. Pepper's Lonely Hearts Club Band" c:_1="The Beatles" />
+            ```
 
+###### 装配集合
+* 新的`BlankDisc`
+    ```java
+    package soundsystem;
+    import java.util.List;
+    public class BlankDisc implements CompactDisc {
+        private String title;
+        private String artist;
+        private List<String> tracks;
+        public BlankDisc(String title, String artist, List<String> tracks) {
+            this.title = title;
+            this.artist = artist;
+            this.tracks = tracks;
+        }
+        public void play() {
+            System.out.println("Playing " + title + " by " + artist);
+            for (String track : tracks) {
+                System.out.println("-Track: " + track);
+            }
+        }
+    }
+    ```
+    * 在声明bean的时候，我们必须要提供一个磁道列表。
+    * 最简单的办法是将列表设置为null。
+        ```xml
+        <bean id="compactDisc" class="soundsystem.BlankDisc">
+            <constructor-arg value="Sgt. Pepper's Lonely Hearts Club Band" />
+            <constructor-arg value="The Beatles" />
+            <constructor-arg><null/></constructor-arg>
+        </bean>
+        ```
+        * `<null/>`元素所做的事情与你的期望是一样的: 将null传递给构造器。
+    * 使用元素将其声明为一个列表
+        ```xml
+        <?xml version="1.0" encoding="UTF-8"?>
+        <beans xmlns="http://www.springframework.org/schema/beans"
+               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xmlns:c="http://www.springframework.org/schema/c"
+               xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+            <bean id="compactDisc" 
+                  class="soundsystem.BlankDisc" 
+                  c:_0="Sgt. Pepper's Lonely Hearts Club Band" 
+                  c:_1="The Beatles">
+                <constructor-arg>
+                    <list>
+                        <value>Sgt. Pepper's Lonely Hearts Club Band</value>
+                        <value>With a Little Help from My Friends</value>
+                        <value>Lucy in the Sky with Diamonds</value>
+                        <value>Getting Better</value>
+                        <value>Fixing a Hole</value>
+                        <!-- ...other tracks omitted for brevity... -->
+                    </list>
+                </constructor-arg>
+            </bean>
+        </beans>
+        ```
+* 也可以使用`<ref>`元素替代`<value>`
+    * 有一个`Discography`类
+        * 它的构造器如
+            ```java
+            public Discography(String artist, List<CompactDisc> cds) { ... }
+            ```
+        * 配置`Discography`bean
+            ```xml
+            <bean id="beatlesDiscography" class="soundsystem.Discography" >
+                <constructor-arg>
+                    <list>
+                        <ref bean="sgtPeppers" />
+                        <ref bean="whiteAlbum" />
+                        <ref bean="hardDaysNight" />
+                        <ref bean="revolver" />
+                    </list>
+                </constructor-arg>
+            </bean>
+            ```
+* 可以按照同样的方式使用`<set>`元素
+* 在装配集合方面，`<constructor-arg>`比`c-`命名空间的属性更有优势。目前，使用`c-`命名空间的属性无法实现装配集合的功能。
 
+##### 设置属性
+* 对强依赖使用构造器注入，而对可选性的依赖使用属性注入。
+* 使用Spring XML实现属性注入
+    ```java
+    package soundsystem;
+    import org.springframework.beans.factory.annotation.Autowired;
+    public class CDPlayer implements MediaPlayer {
+        private CompactDisc cd;
+        @Autowired
+        public CDPlayer(CompactDisc cd) { this.cd = cd; }
+        public void play() { cd.play(); }
+    }
+    ```
+    * CDPlayer没有任何含参构造器，它也没有任何的强依赖。如果声明bean，会导致`NullPointerException`。
+    * 用属性注入
+        ```xml
+        <bean id="cdPlayer" class="soundsystem.CDPlayer" >
+            <property name="compactDisc" ref="compactDisc" />
+        </bean>
+        ```
+* Spring提供了更加简洁的`p-`命名空间，作为`<property>`元素的替代方案。
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <beans xmlns="http://www.springframework.org/schema/beans"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:p="http://www.springframework.org/schema/p"
+           xsi:schemaLocation="http://www.springframework.org/schema/beans
+                               http://www.springframework.org/schema/beans/spring-beans.xsd">
+        <bean id="cdPlayer" class="soundsystem.CDPlayer" p:compactDisc-ref="compactDisc" />
+    </beans>
+    ```
+    * 属性的名字使用了`p:`前缀，表明我们所设置的是一个属性。接下来就是要注入的属性名。最后，属性的名称以`-ref`结尾，这会提示Spring要进行装配的是引用，而不是字面量。
 
+###### 将字面量注入到属性中
+* 属性也可以注入字面量，这与构造器参数非常类似.
+    ```java
+    package soundsystem;
+    import java.util.List;
+    public class BlankDisc implements CompactDisc {
+        private String title;
+        private String artist;
+        private List<String> tracks;
+        public BlankDisc(String title, String artist, List<String> tracks) {
+            this.title = title;
+            this.artist = artist;
+            this.tracks = tracks;
+        }
+        public void play() {
+            System.out.println("Playing " + title + " by " + artist);
+            for (String track : tracks) {
+                System.out.println("-Track: " + track);
+            }
+        }
+    }
+    ```
+    ```xml
+    <bean id="compactDisc" class="soundsystem.BlankDisc">
+        <property name="title" value="Sgt. Pepper's Lonely Hearts Club Band" />
+        <property name="artist" value="The Beatles">
+        <property name="tracks">
+            <list>
+                <value>Sgt. Pepper's Lonely Hearts Club Band</value>
+                <value>With a Little Help from My Friends</value>
+                <value>Lucy in the Sky with Diamonds</value>
+                <value>Getting Better</value>
+                <value>Fixing a Hole</value>
+            <!-- ...other tracks omitted for brevity... -->
+            </list>
+        </property>
+    </bean>
+    ```
+* 不能使用`p-`命名空间来装配集合,可以使用`util-`命名空间辅助实现
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <beans xmlns="http://www.springframework.org/schema/beans"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:p="http://www.springframework.org/schema/p"
+           xmlns:util="http://www.springframework.org/schema/util"
+           xsi:schemaLocation="http://www.springframework.org/schema/beans
+                               http://www.springframework.org/schema/beans/spring-beans.xsd
+                               http://www.springframework.org/schema/util
+                               http://www.springframework.org/schema/util/spring-util.xsd">
 
+        <bean id="compactDisc" class="soundsystem.BlankDisc"
+              p:title="Sgt. Pepper's Lonely Hearts Club Band"
+              p:artist="The Beatles"
+              p:tracks-ref="trackList" />
 
+        <util:list id="trackList">
+            <value>Sgt. Pepper's Lonely Hearts Club Band</value>
+            <value>With a Little Help from My Friends</value>
+            <value>Lucy in the Sky with Diamonds</value>
+            <value>Getting Better</value>
+            <value>Fixing a Hole</value>
+        </util:list>
+    </beans>
+    ```
 
+### 高级装配
+#### 环境与profile
+* 在开发软件的时候，有一个很大的挑战就是将应用程序从一个环境迁移到另外一个环境。开发阶段中，某些环境相关做法可能并不适合迁移到生产环境中，甚至即便迁移过去也无法正常工作。数据库配置、加密算法以及与外部系统的集成是跨环境部署时会发生变化的几个典型例子。
+* 比如数据库配置
+    * 在开发环境中，我们可能会使用嵌入式数据库，并预先加载测试数据
+    * JNDI管理的DataSource更加适合于生产环境
+    * QA环境中，你可以选择完全不同的DataSource配置，可以配置为Commons DBCP连接池
 
+##### 配置profile bean
+* Spring为环境相关的bean所提供的解决方案其实与构建时的方案没有太大的差别。在这个过程中需要根据环境决定该创建哪个bean和不创建哪个bean。不过Spring并不是在构建的时候做出这样的决策，而是等到运行时再来确定。这样的结果就是同一个部署单元(可能会是 WAR 文件)能够适用于所有的环境，没有必要进行重新构建。
+* Spring引入了bean profile的功能。要使用profile，你首先要将所有不同的bean定义整理到一个或多个profile之中，在将应用部署到每个环境时，要确保对应的profile处于激活的状态。
+* 在Java配置中，可以使用`@Profile`注解指定某个bean属于哪一个profile。
+* 在配置类中，嵌入式数据库的DataSource可能会配置成如下
+    ```java
+    package com.myapp;
+    import javax.sql.DataSource;
+    import org.springframework.context.annotation.Bean;
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.context.annotation.Profile;
+    import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+    import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+    @Configuration
+    @Profile("dev")
+    public class DataSourceConfig {
+        @Bean(destroyMethod = "shutdown")
+        public DataSource dataSource() {
+            return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:schema.sql")
+                .addScript("classpath:test-data.sql")
+                .build();
+        }
+    }
+    ```
+    * `@Profile`告诉Spring这个配置类中的bean只有在dev profile激活时才会创建
+* 还需要有一个适用于生产环境的配置
+    ```java
+    package com.myapp;
+    import javax.sql.DataSource;
+    import org.springframework.context.annotation.Bean;
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.jndi.JndiObjectFactoryBean;
+    @Configuration
+    @Profile("prod")
+    public class DataSourceConfig {
+        @Bean
+        public DataSource dataSource() {
+            JndiObjectFactoryBean jndiObjectFactoryBean = new JndiObjectFactoryBean();
+            jndiObjectFactoryBean.setJndiName("jdbc/myDS");
+            jndiObjectFactoryBean.setResourceRef(true);
+            jndiObjectFactoryBean.setProxyInterface(javax.sql.DataSource.class);
+            return (DataSource) jndiObjectFactoryBean.getObject();
+        }
+    }
+    ```
+* 也可以在方法级别上使用`@Profile`注解，与`@Bean`注解一同使用
+    ```java
+    @Configuration
+    public class DataSourceConfig {
+        @Bean(destroyMethod = "shutdown")
+        @Profile("dev")
+        public DataSource embeddedDataSource() {
+            return new EmbeddedDatabaseBuilder()
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:schema.sql")
+                .addScript("classpath:test-data.sql")
+                .build();
+        }
 
+        @Bean
+        @Profile("prod")
+        public DataSource jndiDataSource() {
+            JndiObjectFactoryBean jndiObjectFactoryBean = new JndiObjectFactoryBean();
+            jndiObjectFactoryBean.setJndiName("jdbc/myDS");
+            jndiObjectFactoryBean.setResourceRef(true);
+            jndiObjectFactoryBean.setProxyInterface(javax.sql.DataSource.class);
+            return (DataSource) jndiObjectFactoryBean.getObject();
+        }
+    }
+    ```
+* 没有指定profile的bean始终都会被创建，与激活哪个profile没有关系。
 
+###### 在XML中配置profile
+* 我们也可以通过元素的profile属性，在XML中配置profile bean。
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <beans xmlns="http://www.springframework.org/schema/beans"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+           xmlns:jee="http://www.springframework.org/schema/jee" 
+           xmlns:p="http://www.springframework.org/schema/p"
+           xsi:schemaLocation=" http://www.springframework.org/schema/jee
+                                http://www.springframework.org/schema/jee/spring-jee.xsd
+                                http://www.springframework.org/schema/jdbc
+                                http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
+                                http://www.springframework.org/schema/beans
+                                http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+        <beans profile="dev">
+            <jdbc:embedded-database id="dataSource" type="H2">
+                <jdbc:script location="classpath:schema.sql" />
+                <jdbc:script location="classpath:test-data.sql" />
+            </jdbc:embedded-database>
+        </beans>
+        
+        <beans profile="prod">
+            <jee:jndi-lookup id="dataSource"
+                             lazy-init="true"
+                             jndi-name="jdbc/myDatabase"
+                             resource-ref="true"
+                             proxy-interface="javax.sql.DataSource" />
+        </beans>
+    </beans>
+    ```
 
+##### 激活profile
+* Spring在确定哪个profile处于激活状态时，需要依赖两个独立的属性: `spring.profiles.active`和`spring.profiles.default`。如果设置了`spring.profiles.active`属性的话，那么它的值就会用来确定哪个profile是激活的。但如果没有设置`spring.profiles.active`属性的话，那Spring将会查找`spring.profiles.default`的值。如果`spring.profiles.active`和`pring.profiles.default`均没有设置的话，那就没有激活的profile，因此只会创建那些没有定义在profile中的bean。
+* 有多种方式来设置这两个属性: 
+    * 作为DispatcherServlet的初始化参数；
+    * 作为Web应用的上下文参数；
+    * 作为JNDI条目；
+    * 作为环境变量；
+    * 作为JVM的系统属性；
+    * 在集成测试类上，使用`@ActiveProfiles`注解设置。
+* 例如，在Web应用中，设置`spring.profiles.default`的`web.xml`文件会如下所示: 
+    ```xml
+    <context-param>
+        <param-name>spring.profiles.default</param-name>
+        <param-name>dev</param-name>
+    </context-param>
+    ```
+* 按照这种方式设置`spring.profiles.default`，所有的开发人员都能从版本控制软件中获得应用程序源码，并使用开发环境的设置运行代码，而不需要任何额外的配置。
+* 当应用程序部署到QA、生产或其他环境之中时，负责部署的人根据情况使用系统属性、环境变量或JNDI设置`spring.profiles.active`即可。当设置`spring.profiles.active`以后，至于`spring.profiles.default`置成什么值就已经无所谓了；系统会优先使用`spring.profiles.active`中所设置的profile。
+* profile使用的都是复数形式。这意味着你可以同时激活多个profile，这可以通过列出多个profile名称，并以逗号分隔来实现。
 
+###### 使用profile进行测试
+* Spring提供了`@ActiveProfiles`注解，我们可以使用它来指定运行测试时要激活哪个profile
+    ```java
+    @RunWith(SpringJUnit4ClassRunner.class)
+    @ContextConfiguration(classes={PersistenceTestConfig.class})
+    @ActiveProfile("dev")
+    public class PersistenceTest {}
+    ```
 
+#### 条件化的bean
+* `@Conditional`注解，它可以用到带有`@Bean`注解的方法上，如果给定的条件计算结果为true，就会创建这个bean，否则的话，这个bean会被忽略。
+* 例如: 假设有一个名为`MagicBean`的类，我们希望只有设置了`magic`环境属性的时候，Spring才会实例化这个类。
+    ```java
+    @Bean
+    @Conditioal(MagicExistsCondition.class)
+    public MagicBean magicBean() {
+        return new MagicBean();
+    }
 
+    public interface Condition {
+        boolean matches(ConditionContext ctxt, AnnotatedTypeMetadata metadata);
+    }
 
-
-
+    package com.habuma.restfun;
+    import org.springframework.context.annotation.Condition;
+    import org.springframework.context.annotation.ConditionContext;
+    import org.springframework.core.env.Environment;
+    import org.springframework.core.type.AnnotatedTypeMetadata;
+    public class MagicExistsCondition implements Condition {
+        @Override
+        public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+            Environment env = context.getEnvironment();
+            return env.containsProperty("magic");
+        }
+    }
+    ```
