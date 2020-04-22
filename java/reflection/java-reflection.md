@@ -166,12 +166,12 @@
 
 ##### Class字面常量
 * 在Java中存在另一种方式来生成Class对象的引用，它就是Class字面常量
-    ```
+    ```java
     Class clazz = Gum.class;
     ``` 
 * 这种方式相对前面两种方法更加简单，更安全。因为它在编译器就会受到编译器的检查同时由于无需调用`forName`方法效率也会更高，因为通过字面量的方法获取Class对象的引用不会自动初始化该类。
 * 由于基本数据类型还有对应的基本包装类型，其包装类型有一个标准字段TYPE，而这个TYPE就是一个引用，指向基本数据类型的Class对象，其等价转换，一般情况下更倾向使用.class的形式，这样可以保持与普通类的形式统一。
-    ```
+    ```java
     boolean.class = Boolean.TYPE;
     char.class = Character.TYPE;
     byte.class = Byte.TYPE;
@@ -203,7 +203,7 @@
     
 ##### 理解泛化的Class对象引用
 * 由于Class的引用总数指向某个类的Class对象，利用Class对象可以创建实例类，这也就足以说明Class对象的引用指向的对象确切的类型。在Java SE5引入泛型后，使用我们可以利用泛型来表示Class对象更具体的类型，即使在运行期间会被擦除，但编译期足以确保我们使用正确的对象类型。
-    ```
+    ```java
     public class ClazzDemo {
         public static void main(String[] args){
             //没有泛型
@@ -220,17 +220,17 @@
     ```
     * 声明普通的Class对象，在编译器并不会检查Class对象的确切类型是否符合要求，如果存在错误只有在运行时才得以暴露出来。
     * 但是通过泛型声明指明类型的Class对象，编译器在编译期将对带泛型的类进行额外的类型检查，确保在编译期就能保证类型的正确性，实际上`Integer.class`就是一个`Class<Integer>`类的对象。面对下述语句，确实可能令人困惑，但该语句确实是无法编译通过的。
-    ```
+    ```java
     //编译无法通过
     Class<Number> numberClass=Integer.class;
     ```
     * Integer的Class对象并非Number的Class对象的子类，前面提到过，所有的Class对象都只来源于Class类，看来事实确实如此。当然我们可以利用通配符“?”来解决问题。
-    ```
+    ```java
     Class<?> intClass = int.class;
     intClass = double.class;
     ```
     * 这样的语句并没有什么问题，毕竟通配符指明所有类型都适用，那么为什么不直接使用Class还要使用Class<?>呢？这样做的好处是告诉编译器，我们是确实是采用任意类型的泛型，而非忘记使用泛型约束，因此Class<?>总是优于直接使用Class，至少前者在编译器检查时不会产生警告信息。当然我们还可以使用extends关键字告诉编译器接收某个类型的子类，如解决前面Number与Integer的问题。
-    ```
+    ```java
     Class<? extends Number> clazz = Integer.class;
     clazz = double.class;
     clazz = Number.class;
@@ -238,7 +238,7 @@
     
 ##### 关于类型转换的问题
 * 在许多需要强制类型转换的场景，我们更多的做法是直接强制转换类型
-    ```
+    ```java
     public class ClassCast {
         public void cast(){
             Animal animal= new Dog();
@@ -253,7 +253,7 @@
     ```
     * 之所可以强制转换，这得归功于RRTI，要知道在Java中，所有类型转换都是在运行时进行正确性检查的，利用RRTI进行判断类型是否正确从而确保强制转换的完成，如果类型转换失败，将会抛出类型转换异常。
 * Java SE5中新增一种使用Class对象进行类型转换的方式
-    ```
+    ```java
     Animal animal= new Dog();
     //这两句等同于Dog dog = (Dog) animal;
     Class<Dog> dogType = Dog.class;
@@ -264,7 +264,7 @@
 
 ##### instanceof关键字与isInstance方法
 * 关于`instanceof`关键字，它返回一个boolean类型的值，意在告诉我们对象是不是某个特定的类型实例。
-    ```
+    ```java
     public void cast2(Object obj){
         if(obj instanceof Animal){
             Animal animal= (Animal) obj;
@@ -272,7 +272,7 @@
     }
     ```
 * `isInstance`方法则是Class类中的一个Native方法，也是用于判断对象类型的。
-    ```
+    ```java
     public void cast2(Object obj){
         //isInstance方法
         if(Animal.class.isInstance(obj)){
@@ -291,12 +291,12 @@
 * 获取Constructor对象是通过Class类中的方法获取的，Class类与Constructor相关的主要方法。
     * `public static Class<?> forName​(String className) throws ClassNotFoundException`
         * 返回与带有给定字符串名的类或接口相关联的Class对象。
-            ```
+            ```java
             Class<?> clazz = Class.forName("reflection.common.User");
             ```
     * `public Constructor<T> getConstructor​(Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException`
         * 返回指定参数类型、具有public访问权限的构造函数对象。
-            ```
+            ```java
             Class<?> clazz = Class.forName("reflection.common.User");
             Constructor cs1 =clazz.getConstructor(String.class);
             User user1= (User) cs1.newInstance("xiaolong");
@@ -306,7 +306,7 @@
         * 返回所有具有public访问权限的构造函数的Constructor对象数组。
     * `public Constructor<T> getDeclaredConstructor​(Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException`
         * 返回指定参数类型、所有声明的(包括private)构造函数对象。
-            ```
+            ```java
             Class<?> clazz = Class.forName("reflection.common.User");
             Constructor cs2=clazz.getDeclaredConstructor(int.class,String.class);
             cs2.setAccessible(true);
@@ -314,7 +314,7 @@
             ```
     * `public Constructor<?>[] getDeclaredConstructors​() throws SecurityException`
         * 返回所有声明的(包括private)构造函数对象
-            ```
+            ```java
             Class<?> clazz = Class.forName("reflection.common.User");
             Constructor<?> cons[] = clazz.getDeclaredConstructors();
             for (int i = 0; i < cons.length; i++) {
@@ -332,7 +332,7 @@
             ```
     * `public T newInstance​() throws InstantiationException, IllegalAccessException`
         * 创建此 Class 对象所表示的类的一个新实例。
-            ```
+            ```java
             Class<?> clazz = Class.forName("reflection.common.User");
             User user = (User) clazz.newInstance();
             user.setAge(20);
@@ -342,7 +342,7 @@
 * Constructor类本身一些常用方法
     * `public Class<T> getDeclaringClass​()`
         * 返回Class对象，该对象表示声明由此Constructor对象表示的构造方法的类,其实就是返回真实类型(不包含参数)。
-            ```
+            ```java
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             Class uclazz = cs3.getDeclaringClass();
             //Constructor对象表示的构造方法的类
@@ -350,7 +350,7 @@
             ```
     * `public Type[] getGenericParameterTypes​()`
         * 按照声明顺序返回一组Type对象，返回的就是Constructor对象构造函数的形参类型。
-            ```
+            ```java
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             Type[] tps=cs3.getGenericParameterTypes();
             for (Type tp:tps) {
@@ -359,13 +359,13 @@
             ```
     * `public String getName​()`
         * 以字符串形式返回此构造方法的名称。
-            ```
+            ```java
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             System.out.println("getName:"+cs3.getName());
             ```
     * `public Class<?>[] getParameterTypes​()`
         * 按照声明顺序返回一组Class对象，即返回Constructor对象所表示构造方法的形参类型。
-            ```
+            ```java
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             Class<?> clazzs[] = cs3.getParameterTypes();
             for (Class claz:clazzs) {
@@ -374,7 +374,7 @@
             ```
     * `public T newInstance​(Object... initargs) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException`
         * 使用此Constructor对象表示的构造函数来创建新实例。
-            ```
+            ```java
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             ```
     * `public String toGenericString​()`
