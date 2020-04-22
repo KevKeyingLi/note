@@ -379,7 +379,7 @@
             ```
     * `public String toGenericString​()`
         * 返回描述此Constructor的字符串，其中包括类型参数。
-            ```
+            ```java
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             System.out.println("getoGenericString():"+cs3.toGenericString());
             ```
