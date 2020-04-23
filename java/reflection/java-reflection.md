@@ -25,6 +25,9 @@
         * [instanceof关键字与isInstance方法](#instanceof关键字与isInstance方法)
 - [理解反射技术](#理解反射技术)
     * [Constructor类及其用法](#Constructor类及其用法)
+    * [Field类及其用法](#Field类及其用法)
+    * [Method类及其用法](#Method类及其用法)
+    * [反射包中的Array类](#反射包中的Array类)
 
 ---
 * Ref:
@@ -383,9 +386,169 @@
             Constructor cs3 = clazz.getDeclaredConstructor(int.class,String.class);
             System.out.println("getoGenericString():"+cs3.toGenericString());
             ```
+* Type是Java编程语言中所有类型的公共高级接口，包括:
+    * 原始类型
+    * 参数化类型
+    * 数组类型
+    * 类型变量
+    * 基本类型。
+* `getGenericParameterTypes`与`getParameterTypes`都是获取构成函数的参数类型，前者返回的是Type类型，后者返回的是Class类型，由于Type顶级接口，Class也实现了该接口，因此Class类是Type的子类，Type表示的全部类型而每个Class对象表示一个具体类型的实例，如`String.class`仅代表String类型。
+* 由此看来Type与Class表示类型几乎是相同的，只不过Type表示的范围比Class要广得多而已。当然Type还有其他子类:
+    * TypeVariable: 表示类型参数，可以有上界，比如: `T extends Number`。
+    * ParameterizedType: 表示参数化的类型，有原始类型和具体的类型参数，比如: `List<String>`。
+    * WildcardType: 表示通配符类型，比如: `?`、`? extends Number`、`? super Integer`。
 
+#### Field类及其用法
+* Field 提供有关类或接口的单个字段的信息，以及对它的动态访问权限。
+反射的字段可能是一个类(静态)字段或实例字段。同样的道理，我们可以通过Class类的提供的方法来获取代表字段信息的Field对象，Class类与Field对象相关方法:
+    * `public Field getDeclaredField​(String name) throws NoSuchFieldException, SecurityException`
+        * 获取指定name名称的(包含private修饰的)字段，不包括继承的字段.
+            ```java
+            Class<?> clazz = Class.forName("reflection.common.Student");
+            Field field2 = clazz.getDeclaredField("desc");
+            ```
+    * `public Method[] getDeclaredMethods​() throws SecurityException`
+        * 获取Class对象所表示的类或接口的所有(包含private修饰的)字段,不包括继承的字段。
+            ```java
+            Class<?> clazz = Class.forName("reflection.common.Student");
+            Field fields2[] = clazz.getDeclaredFields();
+            for (Field f:fields2) {
+                System.out.println("f2:"+f.getDeclaringClass());
+            }
+            ```
+    * `public Field getField​(String name) throws NoSuchFieldException, SecurityException`
+        * 获取指定name名称、具有public修饰的字段，包含继承字段。
+            ```java
+            Class<?> clazz = Class.forName("reflection.common.Student");
+            Field field = clazz.getField("age");
+            ```
+    * `public Field[] getFields​() throws SecurityException`
+        * 获取修饰符为public的字段，包含继承字段。
+            ```java
+            Class<?> clazz = Class.forName("reflection.common.Student");
+            Field fields[] = clazz.getFields();
+            for (Field f:fields) {
+                System.out.println("f:"+f.getDeclaringClass());
+            }
+            ```
+* 倘若需要连带获取到父类的字段，那么请使用Class类的`getField/getFields`，也只能获取到public修饰的的字段，无法获取父类的私有字段。
+* `getDeclaredField/getDeclaredFields`方法无法获取到父类的字段。
+    * `public void set​(Object obj, Object value) throws IllegalArgumentException, IllegalAccessException`
+        * 将指定对象变量上此Field对象表示的字段设置为指定的新值。
+            ```java
+            Class<?> clazz = Class.forName("reflection.common.Student");
+            Field ageField = clazz.getField("age");
+            ageField.set(st,18);
+            Field nameField = clazz.getField("name");
+            nameField.set(st,"Lily");
+            ```
+    * `public Object get​(Object obj) throws IllegalArgumentException, IllegalAccessException`
+        * 返回指定对象上此Field表示的字段的值。
+    * `public Class<?> getType​()`
+        * 返回一个Class对象，它标识了此Field对象所表示字段的声明类型。
+    * `public boolean isEnumConstant​()`
+        * 如果此字段表示枚举类型的元素则返回true；否则返回false。
+    * `public String toGenericString​()`
+        * 返回一个描述此Field(包括其一般类型)的字符串。
+    * `public String getName​()`
+        * 返回此Field对象表示的字段的名称。
+    * `public Class<?> getDeclaringClass​()`
+        * 返回表示类或接口的Class对象，该类或接口声明由此Field对象表示的字段。
+    * `public void setAccessible​(boolean flag)`
+        * 将此对象的accessible标志设置为指示的布尔值,即设置其可访问性
 
+#### Method类及其用法
+* Method提供关于类或接口上单独某个方法的信息，所反映的方法可能是类方法或实例方法(包括抽象方法)。
+* Class类获取Method对象相关的方法:
+    * `public Method getDeclaredMethod​(String name, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException`
+        * 返回一个指定参数的Method对象，该对象反映此Class对象所表示的类或接口的指定已声明方法。
+            ```java
+            Class clazz = Class.forName("reflection.common.Circle");
+            Method method1 = clazz.getDeclaredMethod("drawCircle");
+            ```
+    * `public Method[] getDeclaredMethods​() throws SecurityException`
+        * 返回Method对象的一个数组，这些对象反映此Class对象表示的类或接口声明的所有方法，包括公共、保护、默认(包)访问和私有方法，但不包括继承的方法。
+            ```java
+            Class clazz = Class.forName("reflection.common.Circle");
+            Method[] methods1=clazz.getDeclaredMethods();
+            for (Method m:methods1){
+                System.out.println("m1::"+m);
+            }
+            ```
+    * `public Method getMethod​(String name, Class<?>... parameterTypes) throws NoSuchMethodException, SecurityException`
+        * 返回一个Method对象，它反映此Class对象所表示的类或接口的指定公共成员方法。
+            ```java
+            Class clazz = Class.forName("reflection.common.Circle");
+            Method method = clazz.getMethod("draw",int.class,String.class);
+            ```
+    * `public Method[] getMethods​() throws SecurityException`
+        * 返回一个包含某些Method对象的数组，这些对象反映此Class对象所表示的类或接口(包括那些由该类或接口声明的以及从超类和超接口继承的那些的类或接口)的公共member方法。
+            ```java
+            Class clazz = Class.forName("reflection.common.Circle");
+            Method[] methods =clazz.getMethods();
+            for (Method m:methods){
+                System.out.println("m::"+m);
+            }
+            ```
+* 通过`getMethods`方法获取Method对象时，会把父类的方法也获取到。
+* `getDeclaredMethod/getDeclaredMethods`方法都只能获取当前类的方法。
+    * `public Object invoke​(Object obj, Object... args) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException`
+        * 对带有指定参数的指定对象调用由此Method对象表示的底层方法。
+            ```java
+            Class clazz = Class.forName("reflect.Circle");
+            Circle circle = (Circle) clazz.newInstance();
+          
+            Method method = clazz.getMethod("draw",int.class,String.class);
+            method.invoke(circle,15,"圈圈"); // 输出：draw 圈圈,count=15
+          
+            Method method1 = clazz.getDeclaredMethod("drawCircle"); //对私有无参方法的操作
+            method1.setAccessible(true); //修改私有方法的访问标识
+            method1.invoke(circle); // 输出：drawCircle
+            
+            Method method2 =clazz.getDeclaredMethod("getAllCount"); //对有返回值得方法操作
+            Integer count = (Integer) method2.invoke(circle);
+            System.out.println("count:"+count); // 输出：count:100
+            ```
+    * `public Class<?> getReturnType​()`
+        * 返回一个Class对象，该对象描述了此Method对象所表示的方法的正式返回类型，即方法的返回类型。
+    * `public Type getGenericReturnType​()`
+        * 返回表示由此Method对象所表示方法的正式返回类型的Type对象，也是方法的返回类型。
+    * `getParameterTypes​()`
+        * 按照声明顺序返回Class对象的数组，这些对象描述了此Method对象所表示的方法的形参类型。即返回方法的参数类型组成的数组。
+    * `public Type[] getGenericParameterTypes​()`
+        * 按照声明顺序返回Type对象的数组，这些对象描述了此Method对象所表示的方法的形参类型的，也是返回方法的参数类型。
+    * `public String getName​()`
+        * 以String形式返回此Method对象表示的方法名称，即返回方法的名称。
+    * `public boolean isVarArgs​()`
+        * 判断方法是否带可变参数，如果将此方法声明为带有可变数量的参数。
+    * `public String toGenericString​()`
+        * 返回描述此Method的字符串，包括类型参数。
 
-
-
-
+#### 反射包中的Array类    
+* `java.lang.reflect`包中存在着一个可以动态操作数组的类，Array，它提供了动态创建和访问Java数组的方法。
+* Class类中与数组关联的方法
+    * `public Class<?> getComponentType​()`
+        * 返回表示数组元素类型的Class，即数组的类型。
+    * `public boolean isArray​()`
+        * 判定此Class对象是否表示一个数组类。
+* `java.lang.reflect.Array`中的常用静态方法如下:
+    * `public static Object get​(Object array, int index) throws IllegalArgumentException, ArrayIndexOutOfBoundsException`
+        * 返回指定数组对象中索引组件的值。
+    * `public static int getLength​(Object array) throws IllegalArgumentException`
+        * 以int形式返回指定数组对象的长度。
+    * `public static Object newInstance​(Class<?> componentType, int... dimensions) throws IllegalArgumentException, NegativeArraySizeException`
+        * 创建一个具有指定类型和维度的新数组。
+    * `public static Object newInstance​(Class<?> componentType, int length) throws NegativeArraySizeException`
+        * 创建一个具有指定的组件类型和长度的新数组。
+    * `public static void set​(Object array, int index, Object value) throws IllegalArgumentException, ArrayIndexOutOfBoundsException`
+        * 将指定数组对象中索引组件的值设置为指定的新值。
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
