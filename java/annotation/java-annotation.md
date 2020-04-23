@@ -1,7 +1,7 @@
 - [基本语法](#基本语法)
     * [声明注解与元注解](#声明注解与元注解)
-        * [@Target](#@Target)
-        * [@Retention](#@Retention)
+        * [@Target](#-Target)
+        * [@Retention](#-Retention)
     * [注解元素及其数据类型](#注解元素及其数据类型)
 
 ---
