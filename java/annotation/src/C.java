@@ -1,0 +1,2 @@
+@DocumentB
+class C{ }
