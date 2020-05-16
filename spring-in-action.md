@@ -83,7 +83,7 @@
 ## Spring基础
 ### 开发Web应用
 #### 展示信息
-* 假如我们要做一个taco订餐网站，网站上需提供菜单给顾客浏览，同时提供顾客自选食材的功能，我们需要提供以下组件构建这个网站：
+* 假如我们要做一个taco订餐网站，网站上需提供菜单给顾客浏览，同时提供顾客自选食材的功能，我们需要提供以下组件构建这个网站:
     * 代表食材的domain class
         ```java
         @Data
@@ -209,7 +209,7 @@
 
 #### 校验输入表单
 * 从表单提交上来的值可能为空，可能为无效值，所以需要验证
-* Spring MVC中的校验：
+* Spring MVC中的校验:
     * 在类中定义校验的规则
         ```java
         @Data
@@ -318,7 +318,7 @@ public class WebConfig implements WebMvcConfigurer {
     * 无需clean up
     * 无需处理异常
 * 改造domain以适用于数据持久化
-    * 每个domain都具有一个具有唯一性的属性，以便区分每一个object，例如：id
+    * 每个domain都具有一个具有唯一性的属性，以便区分每一个object，例如:id
         ```java
         @Data
         public class Taco {
@@ -855,11 +855,11 @@ public interface TacoRepository {
                 }
                 ```
                 * `passwordEncoder()`接受任何`PasswordEncoder`接口的实现，用于给密码加密， Spring提供以下几种实现
-                    * `BCryptPasswordEncoder`：bcrypt强哈希加密
-                    * `NoOpPasswordEncoder`：无加密
-                    * `Pbkdf2PasswordEncoder`：PBKDF2加密
-                    * `SCryptPasswordEncoder`：scrypt哈希加密
-                    * `StandardPasswordEncoder`：SHA-256哈希加密
+                    * `BCryptPasswordEncoder`:bcrypt强哈希加密
+                    * `NoOpPasswordEncoder`:无加密
+                    * `Pbkdf2PasswordEncoder`:PBKDF2加密
+                    * `SCryptPasswordEncoder`:scrypt哈希加密
+                    * `StandardPasswordEncoder`:SHA-256哈希加密
                     * 如自定义加密器，需实现
                         ```java
                         public interface PasswordEncoder {
@@ -1054,7 +1054,7 @@ public interface TacoRepository {
     * `/design`和`/orders`只对登陆后的用户开发
     * 其他路径所有人都可访问
     * 安全规则的先后顺序会影响路径的accessiblity
-* 用于限定accessibility的方法：
+* 用于限定accessibility的方法:
     * `access(String)` Allows access if the given SpEL expression evaluates to true
     * `anonymous()` Allows access to anonymous users
     * `authenticated()` Allows access to authenticated users
@@ -1140,7 +1140,7 @@ public interface TacoRepository {
     }
     ```
     * `@ManyToOne`指明了多对一的关系，这里是一个用户有多个订单
-* 在用户下单的时候，要先查看用户是谁，有以下几种方法：
+* 在用户下单的时候，要先查看用户是谁，有以下几种方法:
     * Inject a `Principal` object into the controller method
         ```java
         @PostMapping
@@ -1191,7 +1191,7 @@ public interface TacoRepository {
         }
         ```
     * Property injection
-* Spring从以下地方获取属性：
+* Spring从以下地方获取属性:
     * JVM system properties
     * Operating system environment variables
         ```
@@ -1202,7 +1202,7 @@ public interface TacoRepository {
         java -jar tacocloud-0.0.5-SNAPSHOT.jar --server.port=9090
         ```
     * Application property configuration files
-        * 配置文件：`src/main/resources/application.yml`
+        * 配置文件:`src/main/resources/application.yml`
             ```yml
             server:
                 port: 9090
@@ -1533,7 +1533,7 @@ public interface TacoRepository {
 
 #### 启用超媒体
 * HATEOAS(Hypermedia as the Engine of Application State) is a means of creating self-describing APIs wherein resources returned from an API contain links to related resources. This enables clients to navigate an API with minimal understanding of the API’s URLs. Instead, it understands relationships between the resources served by the API and uses its understanding of those relationships to discover the API’s URLs as it traverses those relationships.
-    * 例如我们获取了一些taco的数据，没有使用超媒体：
+    * 例如我们获取了一些taco的数据，没有使用超媒体:
         ```json
         [
             {
@@ -1551,7 +1551,7 @@ public interface TacoRepository {
             // ...
         ]
         ```
-    * 使用超媒体：
+    * 使用超媒体:
         ```json
         {
             "_embedded": {
@@ -1771,20 +1771,20 @@ public class Taco {
 #### 使用Traverson导航REST服务
 * Spring通过称为`JmsTemplate`的基于模板的抽象来支持JMS。
 * 使用`JmsTemplate`，很容易从生产者端跨队列和主题发送消息，并在消费者端接收这些消息。
-* Spring还支持消息驱动POJO的概念：简单的Java对象以异步方式对队列或主题上到达的消息做出响应。
+* Spring还支持消息驱动POJO的概念:简单的Java对象以异步方式对队列或主题上到达的消息做出响应。
 
 ### 发送异步信息
 #### 使用JMS发送信息
 ##### 设置JMS
-* JMS有两个依赖可以选择：
+* JMS有两个依赖可以选择:
     * Apache ActiveMQ
     * Apache ActiveMQ Artemis Broker
 * Artemis是ActiveMQ的下一代重新实现，实际上这让ActiveMQ成为一个遗留选项，唯一显著的区别在于如何配置Spring来创建与Broker的连接。
-* 需配置的Artemis的属性：
-    * `spring.artemis.host` broker 主机
+* Artemis需配置的属性:
+    * `spring.artemis.host` broker主机
     * `spring.artemis.portbroker` 端口
-    * `spring.artemis.user` 用于访问broker的用户（可选）
-    * `spring.artemis.password` 用于访问broker的密码（可选）
+    * `spring.artemis.user` 用于访问broker的用户(可选)
+    * `spring.artemis.password` 用于访问broker的密码(可选)
 * 使用application.yml配置Artemis的属性
     ```yml
     spring:
@@ -1794,9 +1794,459 @@ public class Taco {
             user: tacoweb
             password: 13tm31n
     ```
+* ActiveMQ需配置的属性
+    * `spring.activemq.broker-url` Broker的URL
+    * `spring.activemq.user` 用于访问Broker的用户(可选)
+    * `spring.activemq.password` 用于访问Broker的密码(可选)
+    * `spring.activemq.in-memory` 是否启动内存Broker(默认:true)
+* 使用application.yml配置ActiveMQ的属性
+    ```yml
+    spring:
+        activemq:
+            broker-url: tcp://activemq.tacocloud.com
+            user: tacoweb
+            password: 13tm31n
+    ```
+* 无论选择Artemis还是ActiveMQ，当Broker在本地运行时，都不需要为开发环境配置这些属性。
+
+##### 使用JmsTemplate发送消息
+* `JmsTemplate`有几个发送消息的有用方法
+    ```java
+    // 发送原始消息
+    void send(MessageCreator messageCreator) throws JmsException;
+    void send(Destination destination, MessageCreator messageCreator) throws JmsException;
+    void send(String destinationName, MessageCreator messageCreator) throws JmsException;
+    // 发送转换自对象的消息
+    void convertAndSend(Object message) throws JmsException;
+    void convertAndSend(Destination destination, Object message) throws JmsException;
+    void convertAndSend(String destinationName, Object message) throws JmsException;
+    // 发送经过处理后从对象转换而来的消息
+    void convertAndSend(Object message, MessagePostProcessor postProcessor) throws JmsException;
+    void convertAndSend(Destination destination, Object message, MessagePostProcessor postProcessor) throws JmsException;
+    void convertAndSend(String destinationName, Object message, MessagePostProcessor postProcessor) throws JmsException;
+    ```
+    * 实际上只有两个方法，`send()`和`convertAndSend()`，每个方法都被重载以支持不同的参数。
+* 使用`send()`方法的最基本形式
+    ```java
+    @Service
+    public class JmsOrderMessagingService implements OrderMessagingService {
+        private JmsTemplate jms;
+        @Autowired
+        public JmsOrderMessagingService(JmsTemplate jms) {
+            this.jms = jms;
+        }
+        
+        @Override
+        public void sendOrder(Order order) {
+            jms.send(new MessageCreator() {
+                @Override
+                public Message createMessage(Session session) throws JMSException {
+                    return session.createObjectMessage(order);
+                }
+            });
+        }
+    }
+    ```
+    * `jms.send()`没有指定目的地，还必须使用`spring.jms.template.default-destination`属性指定一个默认的目的地名称
+        ```yml
+        spring:
+            jms:
+                template:
+                    default-destination: tacocloud.order.queue
+        ```
+        * 如果需要发送到默认目的地之外的地方，需要在`send()`指明目的地
+* 有一种方法是将一个`Destination`传给`send()`，最简单的方法是声明一个`Destination`bean，然后将其注入执行消息传递的bean
+* 下面的bean声明了Taco Cloud订单队列`Destination`
+    ```java
+    public Destination orderQueue() {
+        return new ActiveMQQueue("tacocloud.order.queue");
+    }
+    ```
+    * 这是Artemis的`ActiveMQQueue`
+* 将`Destination`bean注入`JmsOrderMessagingService`，`send()`就可以为获取目的地
+    ```java
+    private Destination orderQueue;
+    ​
+    @Autowired
+    public JmsOrderMessagingService(JmsTemplate jms, Destination orderQueue) {
+        this.jms = jms;
+        this.orderQueue = orderQueue;
+    }
+    ​
+    @Override
+    public void sendOrder(Order order) {
+        jms.send(
+            orderQueue,
+            session -> session.createObjectMessage(order));
+    }
+    ```
+
+###### 在发送前转换消息
+* `JmsTemplates`的`convertAndSend()`方法不需要提供`MessageCreator`，从而简化了消息发布。
+* `sendOrder()`的以下重新实现使用`convertAndSend()`将Order发送到指定的目的地:
+    ```java
+    @Override
+    public void sendOrder(Order order) {
+        jms.convertAndSend("tacocloud.order.queue", order);
+    }
+    ```
+    * `convertAndSend()`用`MessageConverter`将对象转换为消息的复杂工作
+
+###### 配置消息转换器
+* MessageConverter 是 Spring 定义的接口，它只有两个用于实现的方法:
+    ```java
+    public interface MessageConverter {
+        Message toMessage(Object object, Session session) throws JMSException, MessageConversionException;
+        Object fromMessage(Message message);
+    }
+    ```
+* 这个接口的实现很简单，都不需要创建自定义实现，Spring 已经提供了一些有用的实现:
+    * `MappingJackson2MessageConverter`
+    * `MarshallingMessageConverter`
+    * `MessagingMessageConverter`
+    * `SimpleMessageConverter`
+        * 将String转换为TextMessage
+        * 将字节数组转换为BytesMessage
+        * 将Map转换为MapMessage
+        * 将Serializable转换为ObjectMessage
+* `SimpleMessageConverter`是默认的消息转换器，但是它要求发送的对象实现`Serializable`接口。
+* 应用不同的消息转换器，需要做的是将选择的转换器声明为一个bean
+    ```java
+    @Bean
+    public MappingJackson2MessageConverter messageConverter() {
+        MappingJackson2MessageConverter messageConverter = new MappingJackson2MessageConverter();
+        messageConverter.setTypeIdPropertyName("_typeId");
+        return messageConverter;
+    }
+    ```
+    * `setTypeIdPropertyName()`使接收者知道要将传入消息转换成什么类型，默认情况下，它将包含被转换类型的完全限定类名。但这有点不灵活，要求接收方也具有相同的类型，具有相同的完全限定类名。
+* 为了实现更大的灵活性，可以通过调用消息转换器上的`setTypeIdMappings()`将合成类型名称映射到实际类型。
+    ```java
+    @Bean
+    public MappingJackson2MessageConverter messageConverter() {
+        MappingJackson2MessageConverter messageConverter = new MappingJackson2MessageConverter();
+        messageConverter.setTypeIdPropertyName("_typeId");
+        
+        Map<String, Class<?>> typeIdMappings = new HashMap<String, Class<?>>();
+        typeIdMappings.put("order", Order.class);
+        messageConverter.setTypeIdMappings(typeIdMappings);
+        
+        return messageConverter;
+    }
+    ```
+    * 与在消息的`_typeId`属性中发送完全限定的类名不同，将发送值`order`。在接收应用程序中，将配置类似的消息转换器，将`order`映射到它自己对order的理解。
+
+###### 后期处理消息
+* Taco Cloud还决定开几家实体Taco连锁店，任何一家餐馆也可以成为web业务的执行中心，需要一种方法来将订单的来源传达给餐馆的厨房。这将使厨房工作人员能够对商店订单采用与网络订单不同的流程。
+* 在`Order`对象中添加一个新的`source`属性来携带此信息是合理的，可以用WEB来填充在线订单，用STORE来填充商店中的订单。但这将需要更改网站的`Order`类和厨房应用程序的`Order`类，而实际上，这些信息只需要为taco准备人员提供。
+* 更简单的解决方案是在消息中添加一个自定义头信息，以承载订单的源。如果正在使用`send()`方法发送taco订单，这可以通过调用消息对象上的`setStringProperty()`轻松实现:
+    ```java
+    jms.send("tacocloud.order.queue",
+            session -> {
+                Message message = session.createObjectMessage(order);
+                message.setStringProperty("X_ORDER_SOURCE", "WEB");
+            });
+    ```
+    * 但是`Message`对象是在幕后创建的，并且不能访问它
+* 使用`convertAndSend()`
+    ```java
+    jms.convertAndSend("tacocloud.order.queue", order, new MessagePostProcessor() {
+            @Override
+            public Message postProcessMessage(Message message)
+                throws JMSException {
+                message.setStringProperty("X_ORDER_SOURCE", "WEB");
+                return message;
+            }
+    });
+    ```
+    * `MessagePostProcessor`可以在消息创建之后对其进行任何操作，在消息发送之前添加`X_ORDER_SOURCE`头信息
+
+##### 接收JMS消息
+* 可以选择`拉模型`(代码请求消息并等待消息到达)或`推模型`(消息可用时将消息传递给代码)。
+* `JmsTemplate`提供了几种接收消息的方法，但它们都使用拉模型。
+* 还可以选择使用推模型，在该模型中，定义了一个消息监听器，它在消息可用时被调用。
+
+###### 使用JmsTemplate接收
+* `JmsTemplate`提供多个用于拉模式的方法
+    ```java
+    Message receive() throws JmsException;
+    Message receive(Destination destination) throws JmsException;
+    Message receive(String destinationName) throws JmsException;
+
+    Object receiveAndConvert() throws JmsException;
+    Object receiveAndConvert(Destination destination) throws JmsException;
+    Object receiveAndConvert(String destinationName) throws JmsException;
+    ```
+* 要查看这些操作，需要编写一些代码来从`tacocloud.order.queue`的目的地拉取`Order`。下面的程序清单显示了`OrderReceiver`，这是一个使用`JmsTemplate.receive()`接收`Order`数据的服务组件。
+    ```java
+    @Component
+    public class JmsOrderReceiver implements OrderReceiver {
+        private JmsTemplate jms;
+        private MessageConverter converter;
+        @Autowired
+        public JmsOrderReceiver(JmsTemplate jms, MessageConverter converter) {
+            this.jms = jms;
+            this.converter = converter;
+        }
+        
+        public Order receiveOrder() {
+            Message message = jms.receive("tacocloud.order.queue");
+            return (Order) converter.fromMessage(message);
+        }
+    }
+    ```
+    * Here you’ve used a String to specify the destination to pull an order from.
+* `receiveAndConvert()`要简单得多
+    ```java
+    @Component
+    public class JmsOrderReceiver implements OrderReceiver {
+        private JmsTemplate jms;
+        @Autowired
+        public JmsOrderReceiver(JmsTemplate jms) {
+            this.jms = jms;
+        }
+        
+        public Order receiveOrder() {
+            return (Order) jms.receiveAndConvert("tacocloud.order.queue");
+        }
+    }
+    ```
+
+###### 声明消息监听器
+* 与拉模型不同，消息监听器是一个被动组件，在消息到达之前是空闲的。
+* 要创建对JMS消息作出响应的消息监听器，只需使用`@JmsListener`对组件中的方法进行注解。
+    ```java
+    @Component
+    public class OrderListener {
+        private KitchenUI ui;
+        @Autowired
+        public OrderListener(KitchenUI ui) {
+            this.ui = ui;
+        }
+        
+        @JmsListener(destination = "tacocloud.order.queue")
+        public void receiveOrder(Order order) {
+            ui.displayOrder(order);
+        }
+    }
+    ```
+    * `receiveOrder()`方法由`JmsListener`注解，以监听`tacocloud.order.queue`目的地的消息。
+    * 当消息到达时，`receiveOrder()`方法将自动调用，并将消息的`Order`有效负载作为参数。
+    * `@JmsListener`注解类似于Spring MVC的请求映射注释，对指定路径的请求做出响应。
 
 #### 使用RabbitMQ和AMQP
+* JMS消息使用接收方将从中检索它们的目的地的名称来寻址，而AMQP消息使用交换器的名称和路由键来寻址，它们与接收方正在监听的队列解耦。
+    ```
+            +---------------------------------+
+            | RabbitMQ Broker                 |
+    Sender -+-> Exchange -> Binding -> Queue -+-> sender
+            +---------------------------------+
+    ```
+* 当消息到达RabbitMQ broker时，它将转到它所寻址的交换器。交换器负责将其路由到一个或多个队列，具体取决于交换器的类型、交换器与队列之间的绑定以及消息的路由键的值。
+* 有几种不同的交换方式，包括以下几种:
+    * Default: 一种特殊的交换器，通过broker自动创建。它将消息路由到与消息的路由键的值同名的队列中。所有的队列将会自动地与交换器绑定。
+    * Direct: 路由消息到消息路由键的值与绑定值相同的队列。
+    * Topic: 将消息路由到一个或多个队列，其中绑定键(可能包含通配符)与消息的路由键匹配。
+    * Fanout: 将消息路由到所有绑定队列，而不考虑绑定键或路由键。
+    * Headers: 与topic交换器类似，只是路由基于消息头值而不是路由键。
+    * Dead letter: 对无法交付的消息(意味着它们不匹配任何已定义的交换器与队列的绑定)的全部捕获。
+
+##### 添加RabbitMQ到Spring中
+* 需要将Spring Boot的AMQP starter依赖项添加到构建中
+    ```xml
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-amqp</artifactId>
+    </dependency>
+    ```
+    * 将AMQP starter添加到构建中将触发自动配置，该配置将创建AMQP 连接工厂和`RabbitTemplate`bean，以及其他支持组件。只需添加此依赖项，就可以开始使用Spring从RabbitMQ broker发送和接收消息
+* 配置RabbitMQ broker的位置和凭据的属性
+    * `spring.rabbitmq.addresses` 一个逗号分隔的RabbitMQ Broker地址列表
+    * `spring.rabbitmq.host` Broker主机（默认为 localhost）
+    * `spring.rabbitmq.port` Broker端口（默认为 5672）
+    * `spring.rabbitmq.username` 访问Broker的用户名（可选）
+    * `spring.rabbitmq.password` 访问Broker的密码（可选）
+* 假设在进入生产环境时，RabbitMQ Broker位于一个名为`rabbit.tacocloud.com`的服务器上，监听端口5673，application.yml的配置:
+    ```yml
+    spring:
+        profiles: prod
+        rabbitmq:
+            host: rabbit.tacocloud.com
+            port: 5673
+            username: tacoweb
+            password: l3tm31n
+    ```
+
+##### 使用RabbitTemplate发送消息
+* Spring对于RabbitMQ消息支持的核心就是`RabbitTemplate`。
+* `RabbitTemplate`发送消息的最有用的方法
+    ```java
+    // 发送原始消息
+    void send(Message message) throws AmqpException;
+    void send(String routingKey, Message message) throws AmqpException;
+    void send(String exchange, String routingKey, Message message) throws AmqpException;
+    ​
+    // 发送从对象转换过来的消息
+    void convertAndSend(Object message) throws AmqpException;
+    void convertAndSend(String routingKey, Object message) throws AmqpException;
+    void convertAndSend(String exchange, String routingKey, Object message) throws AmqpException;
+    ​
+    // 发送经过处理后从对象转换过来的消息
+    void convertAndSend(Object message, MessagePostProcessor mPP) throws AmqpException;
+    void convertAndSend(String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
+    void convertAndSend(String exchange, String routingKey, Object message, MessagePostProcessor messagePostProcessor) throws AmqpException;
+    ```
+* 用`RabbitTemplate`发送taco订单
+    * 使用`send()`方法
+        ```java
+        @Service
+        public class RabbitOrderMessagingService implements OrderMessagingService {
+            
+            private RabbitTemplate rabbit;
+            
+            @Autowired
+            public RabbitOrderMessagingService(RabbitTemplate rabbit) {
+                this.rabbit = rabbit;
+            }
+            
+            public void sendOrder(Order order) {
+                MessageConverter converter = rabbit.getMessageConverter();
+                MessageProperties props = new MessageProperties();
+                Message message = converter.toMessage(order, props);
+                rabbit.send("tacocloud.order", message);
+            }
+        }
+        ```
+        * 调用`send()`之前，将`Order`对象转换为消息
+        * `getMessageConverter()`用于消息转换
+        * `MessageProperties`用于设置属性，无属性的话可以缺省
+        * 只指定了与消息一起的路由键`tacocloud.order`
+    * 在application.yml设置默认交换器与路由键
+        ```yml
+        spring:
+            rabbitmq:
+                template:
+                    exchange: tacocloud.orders
+                    routing-key: kitchens.central
+        ```
+
+###### 配置消息转换器
+* 默认情况下，使用`SimpleMessageConverter`执行消息转换
+* Spring为`RabbitTemplate`提供了几个消息转换器
+    * `Jackson2JsonMessageConverter`
+    * `MarshallingMessageConverter`
+    * `SimpleMessageConverter`
+    * `ContentTypeDelegatingMessageConverter`
+    * `MessagingMessageConverter`
+* 如果需要修改消息转换器，需要做的是配置`MessageConverter`bean
+    ```java
+    @Bean
+    public MessageConverter messageConverter() {
+        return new Jackson2JsonMessageConverter();
+    }
+    ```
+
+###### 设置消息属性
+* 通过提供给消息转换器的`MessageProperties`实例设置消息头
+    ```java
+    public void sendOrder(Order order) {
+        MessageConverter converter = rabbit.getMessageConverter();
+        MessageProperties props = new MessageProperties();
+        props.setHeader("X_ORDER_SOURCE", "WEB");
+        Message message = converter.toMessage(order, props);
+        rabbit.send("tacocloud.order", message);
+    }
+    ```
+* 在使用`convertAndSend()`时，不能快速访问`MessageProperties`对象。不过，`MessagePostProcessor`可以做到这一点:
+    ```java
+    @Override
+    public void sendOrder(Order order) {
+        rabbit.convertAndSend("tacocloud.order.queue", order,
+            new MessagePostProcessor() {
+                @Override
+                public Message postProcessMessage(Message message) throws AmqpException {
+                    MessageProperties props = message.getMessageProperties();
+                    props.setHeader("X_ORDER_SOURCE", "WEB");
+                    return message;
+                }
+            });
+    }
+    ```
+
+##### 从RabbitMQ接收消息
+* 有两个选择:
+    * 使用`RabbitTemplate`从队列中拉取消息
+    * 获取被推送到`@RabbitListener`注解的方法中的消息
+* 使用`RabbitTemplate`接收消息
+* `RabbitTemplate`有多个从队列中拉取消息的方法
+    ```java
+    // 接收消息
+    Message receive() throws AmqpException;
+    Message receive(String queueName) throws AmqpException;
+    Message receive(long timeoutMillis) throws AmqpException;
+    Message receive(String queueName, long timeoutMillis) throws AmqpException;
+    ​
+    // 接收从消息转换过来的对象
+    Object receiveAndConvert() throws AmqpException;
+    Object receiveAndConvert(String queueName) throws AmqpException;
+    Object receiveAndConvert(long timeoutMillis) throws AmqpException;
+    Object receiveAndConvert(String queueName, long timeoutMillis) throws AmqpException;
+    ​
+    // 接收从消息转换过来的类型安全的对象
+    <T> T receiveAndConvert(ParameterizedTypeReference<T> type) throws AmqpException;
+    <T> T receiveAndConvert(String queueName, ParameterizedTypeReference<T> type) throws AmqpException;
+    <T> T receiveAndConvert(long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException;
+    <T> T receiveAndConvert(String queueName, long timeoutMillis, ParameterizedTypeReference<T> type) throws AmqpException;
+    ```
+    * 许多方法接受一个long参数来表示接收消息的超时。默认情况下，接收超时为0毫秒。也就是说，对receive()的调用将立即返回，如果没有可用的消息，则可能返回空值。通过传入超时值，可以让`receive()`和 `receiveAndConvert()`方法阻塞，直到消息到达或超时过期。
+*  使用`RabbitTemplate`从`RabbitMQ`拉取订单
+    ```java
+    @Component
+    public class RabbitOrderReceiver {
+        private RabbitTemplate rabbit;
+        private MessageConverter converter;
+        @Autowired
+        public RabbitOrderReceiver(RabbitTemplate rabbit) {
+            this.rabbit = rabbit;
+            this.converter = rabbit.getMessageConverter();
+        }
+        
+        public Order receiveOrder() {
+            Message message = rabbit.receive("tacocloud.orders");
+            return message != null
+                ? (Order) converter.fromMessage(message)
+                : null;
+        }
+    }
+    ```
+    * 调用所注入的`RabbitTemplate`上的`receive()`方法来从`tacocloud.queue`中获取订单。
+* 改为传递一个30000毫秒的延迟后再调用`receive()`
+    ```java
+    Message message = rabbit.receive("tacocloud.order.queue", 30000);
+    ```
+
+###### 使用监听器处理RabbitMQ消息
+* Spring提供了`RabbitListene`
+    ```java
+    @Component
+    public class OrderListener {
+        private KitchenUI ui;
+        @Autowired
+        public OrderListener(KitchenUI ui) {
+            this.ui = ui;
+        }
+        
+        @RabbitListener(queues = "tacocloud.order.queue")
+        public void receiveOrder(Order order) {
+            ui.displayOrder(order);
+        }
+    }
+    ```
+
 #### Kafka消息
+* Kafka被设计为在集群中运行，提供了巨大的可伸缩性。通过将其topic划分到集群中的所有实例中，它具有很强的弹性。RabbitMQ主要处理exchange中的队列，而Kafka仅利用topic来提供消息的发布/订阅。
+* Kafka topic被复制到集群中的所有broker中。集群中的每个节点充当一个或多个topic的leader，负责该topic的数据并将其复制到集群中的其他节点。
+* 更进一步说，每个topic可以分成多个分区。在这种情况下，集群中的每个节点都是一个topic的一个或多个分区的leader，但不是整个topic的leader。该topic的职责由所有节点分担。
 
 ### 集成Spring
 #### 声明一个简单的集成流
