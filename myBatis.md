@@ -228,7 +228,7 @@
 * 这是MyBatis中极为重要的调整设置，它们会改变MyBatis的运行时行为。
 
 | 设置名 | 描述 | 有效值 | 默认值 |
-| --- | --- | --- | --- |
+| --- | ----------------- | --- | --- |
 | `cacheEnabled` | 全局性地开启或关闭所有映射器配置文件中已配置的任何缓存。 | Boolean | TRUE |
 | `lazyLoadingEnabled` | 延迟加载的全局开关。当开启时，所有关联对象都会延迟加载。 特定关联关系中可通过设置 fetchType 属性来覆盖该项的开关状态。 | Boolean | FALSE |
 | `aggressiveLazyLoading` | 开启时，任一方法的调用都会加载该对象的所有延迟加载属性。 否则，每个延迟加载属性会按需加载(参考 lazyLoadTriggerMethods)。 | Boolean | false(在3.4.1 及之前的版本中默认为 true) |
