@@ -226,6 +226,12 @@
 ##### settings
 * 设置
 * 这是MyBatis中极为重要的调整设置，它们会改变MyBatis的运行时行为。
+```
+|        name        |
+| ------------------ |
+| cacheEnabled       |
+| lazyLoadingEnabled |
+```
 
 ##### typeAliases
 ##### typeHandlers
