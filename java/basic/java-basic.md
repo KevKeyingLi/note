@@ -26,8 +26,16 @@
             * [垃圾回收器](#垃圾回收器)
                 * [Serial收集器](#Serial收集器)
                 * [ParNew收集器](#ParNew收集器)
-                * [Parallel Scavenge收集器](#Parallel Scavenge收集器)
-                * [Serial Old收集器](#Serial Old收集器)
+                * [Parallel Scavenge收集器](#Parallel-Scavenge收集器)
+                * [Serial Old收集器](#Serial-Old收集器)
+                * [Parallel Old收集器](#Parallel Old收集器)
+                * [CMS收集器](#CMS收集器)
+                * [G1收集器](#G1收集器)
+            * [内存分配与回收策略](#内存分配与回收策略)
+                * [对象优先在Eden分配](#对象优先在Eden分配)
+        * [Java内存模型与线程](#Java内存模型与线程)
+            * [Java内存模型](#Java内存模型)
+                * [主内存和工作内存之间的交互](#主内存和工作内存之间的交互)
 
 ---
 * refs:
@@ -190,7 +198,7 @@
 * 新生代
     * Serial
     * ParNew
-    * Parallel Scaveage
+    * Parallel Scavenge
 * 年老代
     * CMS
     * Serial Old(MSC)
@@ -225,6 +233,100 @@ CPU3 =thread4=> | Young Gen    | =thread4=> |              | =thread4=>
 * 作为一个吞吐量优先的收集器，虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整停顿时间。这就是GC的自适应调整策略(GC Ergonomics)。
 
 ###### Serial Old收集器
+* 收集器的老年代版本，单线程，使用`标记-整理`。
+```
+CPU0 =thread1=> |              | =thread1=> |              | =thread1=>
+CPU1 =thread2=> | =GC thread=> | =thread2=> | =GC thread=> | =thread2=>
+CPU2 =thread3=> | Young Gen    | =thread3=> | Old Gen      | =thread3=>
+CPU3 =thread4=> |              | =thread4=> |              | =thread4=>
+```
+
+###### Parallel Old收集器
+* Parallel Old是 Parallel Scavenge收集器的老年代版本。多线程，使用`标记-整理`
+```
+CPU0 =thread1=> | =GC thread=> | =thread1=> | =GC thread=> | =thread1=>
+CPU1 =thread2=> | =GC thread=> | =thread2=> | =GC thread=> | =thread2=>
+CPU2 =thread3=> | =GC thread=> | =thread3=> | =GC thread=> | =thread3=>
+CPU3 =thread4=> | =GC thread=> | =thread4=> | =GC thread=> | =thread4=>
+```
+
+###### CMS收集器
+* CMS(Concurrent Mark Sweep)收集器是一种以获取最短回收停顿时间为目标的收集器。基于`标记-清除`算法实现。
+* 运作步骤: 
+    1. 初始标记(CMS initial mark): 标记`GC Roots`能直接关联到的对象
+    2. 并发标记(CMS concurrent mark): 进行`GC Roots Tracing`
+    3. 重新标记(CMS remark): 修正并发标记期间的变动部分
+    4. 并发清除(CMS concurrent sweep)
+```
+CPU0 =thread1=> |                    | =thread1=> | =remarking=> | =======thread1=======> | =======thread1======>
+CPU1 =thread2=> | =initial marking=> | =thread2=> | =remarking=> | =======thread2=======> | =======thread2======>
+CPU2 =thread3=> |                    | =========> | =remarking=> | =concurrent sweeping=> | =reset=> | =========>
+CPU3 =thread4=> |                    | =thread4=> | =remarking=> | =======thread4=======> | =======thread4======>
+```    
+* 缺点: 对CPU资源敏感、无法收集浮动垃圾、`标记-清除`算法带来的空间碎片。
+   
+###### G1收集器
+* 面向服务端的垃圾回收器。
+* 优点：并行与并发、分代收集、空间整合、可预测停顿。
+* 运作步骤:
+    * 初始标记(Initial Marking)
+    * 并发标记(Concurrent Marking)
+    * 最终标记(Final Marking)
+    * 筛选回收(Live Data Counting and Evacuation)
+```
+CPU0 =thread1=> |                    | ======thread1=======> | =最终标记=> | =筛选回收=> | =thread1=>
+CPU1 =thread2=> | =initial marking=> | ======thread2=======> | =最终标记=> | =筛选回收=> | =thread2=>
+CPU2 =thread3=> |                    | =Concurrent Marking=> | =最终标记=> | =筛选回收=> | =thread3=>
+CPU3 =thread4=> |                    | ======thread4=======> | =最终标记=> | =筛选回收=> | =thread4=>
+```
+
+##### 内存分配与回收策略
+###### 对象优先在Eden分配
+* 对象主要分配在新生代的Eden区上，如果启动了本地线程分配缓冲区，将线程优先在(TLAB)上分配。少数情况会直接分配在老年代中。
+* 堆的内存模型
+```
++------+------+------+---------+
+| Eden | From |  To  |         |
+| 8/10 | 1/10 | 1/10 |         |
++------+------+------+---------+
+|      1/3 Young     | 2/3 Old |
+```
+* 新生代GC(Minor GC)
+    * 发生在新生代的垃圾回收动作，频繁，速度快。
+* 老年代GC(Major GC/Full GC)
+    * 发生在老年代的垃圾回收动作，出现了Major GC经常会伴随至少一次Minor GC(非绝对)。Major GC的速度一般会比Minor GC慢十倍以上。
+
+#### Java内存模型与线程
+```
+处理器 <-> 高速缓存 <-> |
+处理器 <-> 高速缓存 <-> | <-> 主内存
+处理器 <-> 高速缓存 <-> |
+```
+
+##### Java内存模型
+```
+Java线程 <-> 工作内存 <-> |
+Java线程 <-> 工作内存 <-> | <-> 主内存
+Java线程 <-> 工作内存 <-> |
+```
+
+###### 主内存和工作内存之间的交互
+| 操作 | 作用对象 | 解释 |
+| --- | --- | --- |
+| `lock` | 主内存 | 把一个变量标识为一条线程独占的状态 |
+| `unlock` | 主内存 | 把一个处于锁定状态的变量释放出来，释放后才可被其他线程锁定 |
+| `read` | 主内存 | 把一个变量的值从主内存传输到线程工作内存中，以便`load`操作使用 |
+| `load` | 工作内存 | 把`read`操作从主内存中得到的变量值放入工作内存中 |
+| `use` | 工作内存 | 把工作内存中一个变量的值传递给执行引擎，每当虚拟机遇到一个需要使用到变量值的字节码指令时将会执行这个操作 |
+| `assign` | 工作内存 | 把一个从执行引擎接收到的值赋接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作 |
+| `store` | 工作内存 | 把工作内存中的一个变量的值传送到主内存中，以便`write`操作 |
+| `write` | 工作内存 | 把`store`操作从工作内存中得到的变量的值放入主内存的变量中 |
+
+
+
+
+
+
 
 
 
