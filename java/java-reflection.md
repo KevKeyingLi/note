@@ -20,10 +20,10 @@
     * Constructor、Method、Field共有的父类是AnnotatedElement、AccessibleObject和Member。
     * Constructor、Method共有的父类是AnnotatedElement、AccessibleObject、Member、GenericDeclaration和Executable。
 * 在Class中，`getXXX()`方法和`getDeclearedXXX()`方法有所区别。注解类型`Annotation`的操作方法例外，因为基于注解的修饰符必定是public的
-    * `getDeclaredMethod(s)`: 返回类或接口声明的所有方法，包括公共、保护、默认(包)访问和私有方法，但不包括继承的方法。对于获取Method对象，Method[] methods = clazz.getDeclaredMethods();返回的是clazz本类所有修饰符(public、default、private、protected)的方法数组，但是不包含继承而来的方法。
-    * `getMethod(s)`: 返回某个类的所有公用(public)方法包括其继承类的公用方法，当然也包括它所实现接口的方法。对于获取Method对象，Method[] methods = clazz.getMethods();表示返回clazz的父类、父类接口、本类、本类接口中的全部修饰符为public的方法数组。
+    * `getDeclaredMethod(s)`: 返回类或接口声明的所有方法，包括公共、保护、默认(包)访问和私有方法，但不包括继承的方法。对于获取Method对象，`Method[] methods = clazz.getDeclaredMethods()`;返回的是clazz本类所有修饰符(public、default、private、protected)的方法数组，但是不包含继承而来的方法。
+    * `getMethod(s)`: 返回某个类的所有公用(public)方法包括其继承类的公用方法，当然也包括它所实现接口的方法。对于获取Method对象，`Method[] methods = clazz.getMethods()`;表示返回clazz的父类、父类接口、本类、本类接口中的全部修饰符为public的方法数组。
     * `getDeclaredField(s)`和`getField(s)`、`getDeclaredConstructor(s)`和`getConstructor(s)`同上。
-    * `getDeclaredAnnotation(s)`: 返回直接存在于此元素上的所有注解，此方法将忽略继承的注解，准确来说就是忽略@Inherited注解的作用。
+    * `getDeclaredAnnotation(s)`: 返回直接存在于此元素上的所有注解，此方法将忽略继承的注解，准确来说就是忽略`@Inherited`注解的作用。
     * `getAnnotation(s)`: 返回此元素上存在的所有注解，包括继承的所有注解。
 
 
