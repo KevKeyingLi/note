@@ -227,33 +227,33 @@
 | `<=` | Less than or equal to |
 | `>=` | Greater than or equal to |
 
-    ```sql
-    SELECT 
-        lastname, 
-        firstname, 
-        jobtitle
-    FROM
-        employees
-    WHERE
-        jobtitle <> 'Sales Rep';
-    ```
-    ```sql
-    SELECT 
-        lastname, 
-        firstname, 
-        officeCode
-    FROM
-        employees
-    WHERE 
-        officecode > 5;
-    ```
-    ```sql
-    SELECT 
-        lastname, 
-        firstname, 
-        officeCode
-    FROM
-        employees
-    WHERE 
-        officecode <= 4;
-    ```
+```sql
+SELECT 
+    lastname, 
+    firstname, 
+    jobtitle
+FROM
+    employees
+WHERE
+    jobtitle <> 'Sales Rep';
+```
+```sql
+SELECT 
+    lastname, 
+    firstname, 
+    officeCode
+FROM
+    employees
+WHERE 
+    officecode > 5;
+```
+```sql
+SELECT 
+    lastname, 
+    firstname, 
+    officeCode
+FROM
+    employees
+WHERE 
+    officecode <= 4;
+```
