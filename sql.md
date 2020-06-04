@@ -166,26 +166,94 @@
         jobTitle;
     ```
 * Using MySQL WHERE with BETWEEN operator
+    * The `BETWEEN` operator returns TRUE if a value is in a range of values
+        ```sql
+        SELECT 
+            firstName, 
+            lastName, 
+            officeCode
+        FROM
+            employees
+        WHERE
+            officeCode BETWEEN 1 AND 3
+        ORDER BY officeCode;
+        ```
+*  Using MySQL WHERE with the LIKE operator example
+    * The `LIKE` operator evaluates to TRUE if a value matches a specified pattern. To form a pattern, you use `%` and `_` wildcards. The `%` wildcard matches any string of zero or more characters while the `_` wildcard matches any single character.
+        ```sql
+        SELECT 
+            firstName, 
+            lastName
+        FROM
+            employees
+        WHERE
+            lastName LIKE '%son'
+        ORDER BY firstName;
+        ```
+* Using MySQL WHERE clause with the IN operator
+    * The IN operator returns TRUE if a value matches any value in a list.
+        ```sql
+        SELECT 
+            firstName, 
+            lastName, 
+            officeCode
+        FROM
+            employees
+        WHERE
+            officeCode IN (1 , 2, 3)
+        ORDER BY 
+            officeCode;
+        ```
+* Using MySQL WHERE clause with the IS NULL operator
+    * The IS NULL operator returns TRUE if a value is NULL.
     ```sql
     SELECT 
-        firstName, 
         lastName, 
+        firstName, 
+        reportsTo
+    FROM
+        employees
+    WHERE
+        reportsTo IS NULL;
+    ```
+* Using MySQL WHERE clause with comparison operators
+
+| Operator | Description |
+| --- | --- |
+| `=` | Equal to. You can use it with almost any data types. |
+| `<> or !=` | Not equal to |
+| `<` | Less than. You typically use it with numeric and date/time data types. |
+| `>` | Greater than. |
+| `<=` | Less than or equal to |
+| `>=` | Greater than or equal to |
+
+    ```sql
+    SELECT 
+        lastname, 
+        firstname, 
+        jobtitle
+    FROM
+        employees
+    WHERE
+        jobtitle <> 'Sales Rep';
+    ```
+    ```sql
+    SELECT 
+        lastname, 
+        firstname, 
         officeCode
     FROM
         employees
-    WHERE
-        officeCode BETWEEN 1 AND 3
-    ORDER BY officeCode;
+    WHERE 
+        officecode > 5;
     ```
-*  Using MySQL WHERE with the LIKE operator example
-    * The `LIKE` operator evaluates to TRUE if a value matches a specified pattern. To form a pattern, you use `%` and `_` wildcards. The `%` wildcard matches any string of zero or more characters while the `_` wildcard matches any single character.
     ```sql
     SELECT 
-        firstName, 
-        lastName
+        lastname, 
+        firstname, 
+        officeCode
     FROM
         employees
-    WHERE
-        lastName LIKE '%son'
-    ORDER BY firstName;
+    WHERE 
+        officecode <= 4;
     ```
