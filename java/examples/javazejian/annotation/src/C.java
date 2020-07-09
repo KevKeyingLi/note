@@ -1,2 +1,0 @@
-@DocumentB
-class C{ }
